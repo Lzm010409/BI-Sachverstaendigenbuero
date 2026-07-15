@@ -111,10 +111,10 @@ fast-forwarded (Commits `a895b10`, `abd14fe`). Deploy via
 - **Aktenzeichen-Join 99,95 %:** nur 2 von 4279 Positionen ohne Aktenzeichen
   (zweistufiger Fallback über `invoiceNumber`-Präfix greift).
 - **Konsistenz:** 988/994 Rechnungen rekonzilieren exakt (Σ Positionen == `sumGross`).
-  **6 Rechnungen mit Σ Positionen == exakt 2× Rechnungssumme** — Positionen sind
-  korrekt (keine Duplikate), die Rechnung ist auf ~50 % gequotelt. **Sehr wahrsch.
-  Haftungsquote/Teilregulierung — vom Inhaber zu bestätigen.** `v_rechnung_konsistenz`
-  findet solche Fälle bewusst (relevant für Phase 5).
+  Die **6 Ausreißer** (Σ Positionen == 2× Rechnungssumme) sind vom Inhaber geklärt:
+  **Rabatt** (kein Bug, keine Haftungsquote), es waren **Sonderrechnungen, die nicht
+  weiterverfolgt werden → ignorieren.** `v_rechnung_konsistenz` bleibt als Melder
+  solcher Fälle (relevant für Phase 5).
 - **Erste Deploy-Panne (behoben):** die alte `&&`-Extraktionskette brach beim ersten
   Deploy vor sevDesk ab (transienter Pipedrive-Schritt) → 0 Rechnungen, ohne Log-
   Sicht. Fix: Observability (`sql/007`) + resiliente `;`-Kette (Pipedrive blockiert
@@ -128,13 +128,12 @@ fast-forwarded (Commits `a895b10`, `abd14fe`). Deploy via
   „Phantomkalkulation" (+ Tippfehler-Varianten). Ansehen: `core.dim_positionskategorie`
   (Zeilen mit `kategorie='Sonstiges'`). Zuordnung/Bearbeitung: mit Inhaber abstimmen;
   optional editierbare Seed-Tabelle statt `CASE`.
-- **6 gequotelte Rechnungen** (s. o.) — Interpretation bestätigen.
-- **`sumGross == deal_value`**: vom Inhaber bestätigt (gilt regulär; bei den 6
-  gequotelten Rechnungen ist der Deal-Value voraussichtlich der gequotelte Betrag).
+- **`sumGross == deal_value`**: vom Inhaber bestätigt (gilt regulär). Die 6
+  Ausreißer sind Rabatt-Sonderrechnungen und werden nicht weiterverfolgt.
 
 ## NÄCHSTER SCHRITT
 
 - Kategorien-Katalog mit dem Inhaber finalisieren (neue Namen zuordnen; ggf. Seed-
-  Tabelle). Interpretation der 6 gequotelten Rechnungen klären.
+  Tabelle) — offen, auf Zuruf. (Die 6 Rabatt-Sonderrechnungen sind erledigt: ignorieren.)
 - Danach **Phase 4 (autoiXpert)** oder **Phase 5 (Kürzungsgrund/Durchsetzungsquote)**
   — Phase 5 hat mit Phase 3 jetzt ihr Positions-Fundament.
