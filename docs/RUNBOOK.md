@@ -28,8 +28,11 @@ Warehouse als Datenquelle mit dem read-only User `metabase_ro`.
    `WAREHOUSE_DB_HOST`, `WAREHOUSE_DB_PORT`, `WAREHOUSE_DB_NAME`,
    `ETL_DB_USER`, `ETL_DB_PASSWORD`, `PG_MAJOR`.
 
-4. **Deploy.** Der `migrate`-Service läuft an, wendet `sql/001_init.sql` an und
-   beendet sich mit 0. Bei Fehler schlägt der Deploy fehl (gewollt).
+4. **Deploy.** Der `etl`-Service läuft an und arbeitet die Kette ab: Migrationen
+   001–004 → Pipedrive-Extraktion (orgs + deals) → Golden-Test. Er beendet sich
+   mit 0; bricht eine Stufe ab, endet der Container != 0 (Signal im Container-Log).
+   `migrate`/`backup` liegen hinter dem Compose-Profile `tools` und starten beim
+   Deploy **nicht** — nur manuell via `docker compose run --rm <service>`.
 
 5. **Metabase-Datenquelle** hinzufügen: Metabase → Admin → Datenbanken →
    PostgreSQL. Host/Port der Instanz, DB `warehouse`, User `metabase_ro`,
@@ -85,7 +88,10 @@ dropdb -h <host> -U <admin> warehouse_restore_test
 
 ## Phase 2 — Pipedrive-Extraktion
 
-- **Extraktion** (im Coolify-Container, Pipedrive-Secrets gesetzt):
+- **Automatisch beim Deploy:** Der `etl`-Service (siehe oben) führt nach den
+  Migrationen `extract:orgs` und `extract:deals` aus und schließt mit dem
+  Golden-Test ab. Ein Redeploy wiederholt die Kette (inkrementell, unschädlich).
+- **Manuell** (im Coolify-Container, Pipedrive-Secrets gesetzt):
   ```
   npm run extract:orgs      # Organisationen -> raw.pipedrive_organizations
   npm run extract:deals     # Deals (inkrementell) -> raw.pipedrive_deals

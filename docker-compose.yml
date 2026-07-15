@@ -1,4 +1,4 @@
-# Phase 1 — ETL/Migrate/Backup als EINE Coolify-Ressource.
+# Phase 1/2 — ETL/Migrate/Backup als EINE Coolify-Ressource.
 # PostgreSQL und Metabase existieren bereits als eigene Coolify-Ressourcen und
 # sind NICHT Teil dieser Compose. Diese Services verbinden sich mit der
 # bestehenden Postgres-Instanz über WAREHOUSE_DB_HOST (Coolify-internes Netz).
@@ -8,8 +8,44 @@
 # damit WAREHOUSE_DB_HOST auflösbar ist. Siehe docs/RUNBOOK.md.
 
 services:
-  # Einmaliger Migrations-Lauf beim Deploy. Läuft durch und beendet sich.
+  # Standard-Deploy-Lauf (Coolify `up`): Migrationen -> Extraktion -> Golden.
+  # Läuft einmal durch und beendet sich (restart: no). Bricht eine Stufe ab,
+  # endet der Container != 0 und die Kette stoppt (Signal im Container-Log).
+  #   1. Migrationen 001–004 anwenden (idempotent)
+  #   2. Pipedrive-Extraktion orgs + deals -> raw (inkrementell)
+  #   3. Golden-Test (read-only) gegen core.fact_ausbuchung
+  etl:
+    build:
+      context: .
+      dockerfile: docker/migrate.Dockerfile
+    environment:
+      WAREHOUSE_DB_HOST: ${WAREHOUSE_DB_HOST}
+      WAREHOUSE_DB_PORT: ${WAREHOUSE_DB_PORT:-5432}
+      WAREHOUSE_DB_NAME: ${WAREHOUSE_DB_NAME:-warehouse}
+      ETL_DB_USER: ${ETL_DB_USER:-etl}
+      ETL_DB_PASSWORD: ${ETL_DB_PASSWORD}
+      PIPEDRIVE_API_TOKEN: ${PIPEDRIVE_API_TOKEN}
+      PIPEDRIVE_COMPANY_DOMAIN: ${PIPEDRIVE_COMPANY_DOMAIN}
+    command:
+      - sh
+      - -c
+      - |
+        set -e
+        echo "== Migrationen =="
+        npx tsx scripts/migrate.ts
+        echo "== Extraktion: Organisationen =="
+        npx tsx etl/pipedrive/extract-organizations.ts
+        echo "== Extraktion: Deals =="
+        npx tsx etl/pipedrive/extract-deals.ts
+        echo "== Golden-Test =="
+        npx tsx scripts/test-golden.ts
+    restart: "no"
+
+  # --- Manuelle Tools (nicht beim Deploy gestartet; via `docker compose run`) ---
+
+  # Nur Migrationen:  docker compose run --rm migrate
   migrate:
+    profiles: ["tools"]
     build:
       context: .
       dockerfile: docker/migrate.Dockerfile
@@ -25,6 +61,7 @@ services:
   # aufrufen:  docker compose run --rm backup
   # Image-Major = Server-Major (PG_MAJOR).
   backup:
+    profiles: ["tools"]
     image: postgres:${PG_MAJOR:-17}-alpine
     entrypoint: ["/bin/sh", "/app/scripts/backup.sh"]
     environment:

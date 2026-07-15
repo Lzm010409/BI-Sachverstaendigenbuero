@@ -11,6 +11,7 @@ COPY tsconfig.json ./
 COPY sql ./sql
 COPY scripts ./scripts
 COPY etl ./etl
+COPY fixtures ./fixtures
 
 # Migrations-Lauf; exit 0 bei Erfolg, sonst != 0 (Deploy schlägt fehl).
 CMD ["npx", "tsx", "scripts/migrate.ts"]
