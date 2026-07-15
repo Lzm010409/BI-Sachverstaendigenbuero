@@ -546,7 +546,7 @@
     },
     {
       "deal_id": 585,
-      "case": "ausgebucht_pos_ohne_grund",
+      "case": "ausgebucht_pos_mit_grund",
       "raw": {
         "id": 585,
         "title": "0325/1531TG",
@@ -560,7 +560,7 @@
             "value": 114.3,
             "currency": "EUR"
           },
-          "a037653e87dd01a3ab9946c9741ff2db41de64f3": null,
+          "a037653e87dd01a3ab9946c9741ff2db41de64f3": 69,
           "8e0a4e9266683b1a80cb216ab073e7c106fe85de": {
             "value": 116.76,
             "currency": "EUR"
@@ -573,7 +573,7 @@
         "deal_value_brutto": 731.27,
         "enthaltene_mwst": 116.76,
         "ausgebucht_betrag": 114.3,
-        "ausgebucht_grund_id": null,
+        "ausgebucht_grund_id": 69,
         "ist_erfasst": true,
         "status": "won",
         "org_id": 221,
@@ -582,7 +582,7 @@
     },
     {
       "deal_id": 607,
-      "case": "ausgebucht_pos_ohne_grund",
+      "case": "ausgebucht_pos_mit_grund",
       "raw": {
         "id": 607,
         "title": "0425/1550TG",
@@ -596,7 +596,7 @@
             "value": 292.65,
             "currency": "EUR"
           },
-          "a037653e87dd01a3ab9946c9741ff2db41de64f3": null,
+          "a037653e87dd01a3ab9946c9741ff2db41de64f3": 69,
           "8e0a4e9266683b1a80cb216ab073e7c106fe85de": {
             "value": 155.75,
             "currency": "EUR"
@@ -609,7 +609,7 @@
         "deal_value_brutto": 975.46,
         "enthaltene_mwst": 155.75,
         "ausgebucht_betrag": 292.65,
-        "ausgebucht_grund_id": null,
+        "ausgebucht_grund_id": 69,
         "ist_erfasst": true,
         "status": "won",
         "org_id": 126,
@@ -618,7 +618,7 @@
     },
     {
       "deal_id": 355,
-      "case": "ausgebucht_pos_ohne_grund",
+      "case": "ausgebucht_pos_mit_grund",
       "raw": {
         "id": 355,
         "title": "1223/1032TG",
@@ -632,7 +632,7 @@
             "value": 618.21,
             "currency": "EUR"
           },
-          "a037653e87dd01a3ab9946c9741ff2db41de64f3": null,
+          "a037653e87dd01a3ab9946c9741ff2db41de64f3": 74,
           "8e0a4e9266683b1a80cb216ab073e7c106fe85de": {
             "value": 98.71,
             "currency": "EUR"
@@ -645,7 +645,7 @@
         "deal_value_brutto": 618.21,
         "enthaltene_mwst": 98.71,
         "ausgebucht_betrag": 618.21,
-        "ausgebucht_grund_id": null,
+        "ausgebucht_grund_id": 74,
         "ist_erfasst": true,
         "status": "won",
         "org_id": 121,
@@ -654,7 +654,7 @@
     },
     {
       "deal_id": 465,
-      "case": "ausgebucht_pos_ohne_grund",
+      "case": "ausgebucht_pos_mit_grund",
       "raw": {
         "id": 465,
         "title": "1224/1423TG",
@@ -668,7 +668,7 @@
             "value": 252.39,
             "currency": "EUR"
           },
-          "a037653e87dd01a3ab9946c9741ff2db41de64f3": null,
+          "a037653e87dd01a3ab9946c9741ff2db41de64f3": 69,
           "8e0a4e9266683b1a80cb216ab073e7c106fe85de": {
             "value": 182.46,
             "currency": "EUR"
@@ -681,7 +681,7 @@
         "deal_value_brutto": 1142.77,
         "enthaltene_mwst": 182.46,
         "ausgebucht_betrag": 252.39,
-        "ausgebucht_grund_id": null,
+        "ausgebucht_grund_id": 69,
         "ist_erfasst": true,
         "status": "won",
         "org_id": 160,
