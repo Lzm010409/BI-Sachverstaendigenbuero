@@ -24,7 +24,7 @@
 | `92bae1c6…` | Modell | varchar | confirmed | include | Freitext |
 | `00e9babb…` | Kennzeichen | varchar | confirmed | **exclude** | DSGVO |
 | `2af7a9a8…` | Erstzulassung | date | confirmed | include | |
-| `cff1b2f6…` | Schadendatum? | date | inferred | include | ❓ Datumsart offen |
+| `cff1b2f6…` | Erwerbsdatum? | date | inferred | include | ❓ revidiert von Schadendatum (immer < add_time) |
 | `62a4930b…` | Datum unbekannt | date | needs_token | include | NEU ❓ |
 | `07e27cb2…` | Fahrzeugalter-Klasse | enum | confirmed | include | 49=Mittelalt, 51=>10 J. |
 | `e9201fb8…` | Schadenbereich | set | confirmed | include | Mehrfachauswahl |
@@ -33,8 +33,8 @@
 | `2b30a5b6…` | Vorschaden-Beschreibung? | text | inferred | **exclude** | DSGVO |
 | `3bc5c0f3…` | Altschaden (Ja/Nein)? | enum | inferred | include | ❓ vs Vorschaden |
 | `537563a6…` | Altschaden-Beschreibung? | text | inferred | **exclude** | DSGVO |
-| `215832fc…` | Nutzungsausfall Tagessatz? | double | inferred | include | ❓ 128/145/198 |
-| `4476af41…` | Nutzungsausfall Tage? | double | inferred | include | ❓ 2/4/14/17 |
+| `215832fc…` | Nutzungsausfall Tagessatz? | double | inferred | include | ❓ 128–301, r=−0,01 zu value, Tabellenwert |
+| `4476af41…` | unbekannt (kaum genutzt) | double | needs_token | exclude | ❓ 0/100 befüllt |
 | `102c6f8c…` | autoiXpert Deeplink | varchar | confirmed | include | NEU |
 | `f6970a4f…` | autoiXpert Gutachten-ID | varchar | confirmed | include | NEU; Join-Key Phase 4 |
 | `d8863fcb…` | sevDesk Rechnungs-ID | varchar | confirmed | include | Join-Key Phase 3 |

@@ -1,11 +1,12 @@
 # Feldmapping — Recon-Findings & offene Entscheidungen (Phase 0)
 
 **Stand:** 2026-07-15
-**Quelle:** Live-Stichproben über die Pipedrive-MCP-Schnittstelle
-(`getDeals`/`getOrganizations`/`getStages` mit `include_option_labels=true` und
-`include_labels=true`). **Kein** Zugriff auf den Feldmetadaten-Endpunkt — dafür
-fehlt noch der read-only Token. Diese Datei ist der Gegenlese-Gegenstand für die
-🧑-MENSCH-Punkte aus Phase 0.
+**Quelle:** Live-Stichproben über den **Pipedrive-OAuth-MCP** (`getDeals`/
+`getOrganizations`/`getStages` mit `include_option_labels=true` und
+`include_labels=true`, u. a. ein 100-Deal-Scan). Der MCP stellt **kein**
+Feldmetadaten-Endpoint bereit — Feld-*labels* bleiben daher aus Werten
+abgeleitet, nicht aus der API-Metadaten gelesen. Diese Datei ist der
+Gegenlese-Gegenstand für die 🧑-MENSCH-Punkte aus Phase 0.
 
 > Dieses Dokument ist von Hand gepflegt und wird **nicht** von
 > `fetch-field-mapping.ts` überschrieben (anders als `field-mapping.json/.md`).
@@ -34,17 +35,19 @@ Belegt aus den Werten (`status: confirmed` in `field-mapping.json`):
 | `7f32b816…` | **Nettobetrag** = `deal_value / 1,19` (belegt: 4526,36 = 5386,37/1,19) | Konsistenz-Check gegen enthaltene MwSt. |
 | `62a4930b…` | **Datumsfeld**, Wert nahe `won_time` (2026-06-24) | Bedeutung offen (Besichtigung? Rechnung?), siehe ❓. |
 
-## 3. Offene ❓ — brauchen Token **oder** deine Entscheidung
+## 3. Selbst-geprüfte Hypothesen (100-Deal-Scan) — Ergebnis
 
-| Feld / Frage | Aktuelle Hypothese | Wie zu klären |
-|---|---|---|
-| `215832fc…` (Zahl 128/145/198) | **Nutzungsausfall-Tagessatz** (€/Tag) | Label aus Fields-API v2 (Token) bestätigt es sofort. |
-| `4476af41…` (Zahl 2/4/14/17) | **Nutzungsausfall-Tage** | dito. Zusammen ergäbe das Nutzungsausfall gesamt. |
-| `efd97e60…` vs `3bc5c0f3…` (beide Ja/Nein) | `efd97e60…` = **Vorschaden**, `3bc5c0f3…` = **Altschaden** (nach Feldreihenfolge + Freitextinhalt „nachlackiert" vs. Liste von Dellen) | Token bestätigt Labels. **MENSCH: bitte bestätigen.** |
-| `cff1b2f6…` (Datum) | **Schadendatum** (liegt vor Anlage, nach Erstzulassung) | Token + dein Wissen: Erwerb? Anmeldung? Schaden? |
-| `62a4930b…` (Datum, NEU) | Besichtigungs- oder Rechnungsdatum | Token + dein Wissen. |
-| `621afa76…`, `b189ecbd…` (Deal, immer null) | unbekannt | Token. |
-| Org-Custom-Fields `f8457fc2…` etc. (immer null) | unbekannt | Token. |
+Der MCP liefert keine Metadaten; ich habe die ❓ stattdessen über einen
+100-Deal-Scan datenbasiert geprüft. Ergebnis:
+
+| Feld | Alte Vermutung | **Befund aus dem Scan** | Reststatus |
+|---|---|---|---|
+| `215832fc…` | Nutzungsausfall-Tagessatz | 86/100 befüllt, ganzzahlig 128–301 (Cluster bei 128), **r=−0,01 zu deal_value** → kein Honorar, wirkt wie Tabellenwert. Tagessatz-Hypothese plausibel, aber **nicht** als Paar mit Tage-Feld. | unbestätigt |
+| `4476af41…` | Nutzungsausfall-Tage | **0/100 befüllt** (früher nur 4/17). Nahezu ungenutzt. → „Rate×Tage"-These verworfen. | irrelevant/ offen |
+| `efd97e60…` / `3bc5c0f3…` | Vor-/Altschaden | Bestätigt: **zwei eigenständige Ja/Nein-Felder** (Optionen 53/54 bzw. 55/56). | Zuordnung Vor↔Alt noch zu bestätigen |
+| `cff1b2f6…` | Schadendatum | **Immer < add_time (81/81)**, = Erstzulassung bei Neukauf, danach bei Gebrauchtkauf → **Erwerbs-/Anschaffungsdatum**, nicht Schadendatum. | Hypothese revidiert, bitte bestätigen |
+| `62a4930b…` | Besichtigung/Rechnung | nur 13/100 befüllt, gemischt vor/nach `won_time`. | offen |
+| `621afa76…`, `b189ecbd…`, Org-Felder | unbekannt | im Scan durchgängig null. | offen (Wissen Inhaber) |
 
 ## 4. `org_id` — die zentrale Lücke (🧑 MENSCH-Entscheidung)
 
@@ -69,40 +72,49 @@ Belegt aus den Werten (`status: confirmed` in `field-mapping.json`):
   `org_id`; fehlende explizit als „ohne Versicherer-Zuordnung" ausweisen, **nicht**
   wegcoalescen.
 
-## 5. `label_ids` entschlüsselt (🧑 MENSCH: 60 offen)
+## 5. `label_ids` entschlüsselt — Vollständiger Katalog in `labels.md`
 
-Deal-Labels sind **zwei Dinge in einem Feld**:
+Deal-Labels sind **drei Bedeutungsgruppen in einem Feld** (Details + Häufigkeiten
+in `docs/labels.md`):
 
-| ID | Bedeutung | Gruppe |
-|---|---|---|
-| 28 | **Haftpflichtgutachten** | Gutachtenart |
-| 36 | **BEWERTUNG** (Wertermittlung) | Gutachtenart |
-| 60 | **noch nicht beobachtet** ❓ | vermutlich weitere Gutachtenart |
-| 61 | Neuer Fall | Fall-Alterung |
-| 62 | Mittelalter Fall | Fall-Alterung |
-| 63 | Überfälliger Fall | Fall-Alterung |
+- **Gutachtenart:** 28 = Haftpflichgutachten (98/100), 36 = BEWERTUNG (2/100).
+- **Fall-Alterung:** 61 Neuer / 62 Mittelalter / 63 Überfälliger Fall (auto).
+- **Fall-Flag:** **60 = „OHNE RECHTSANWALT"** — jetzt geklärt, **keine**
+  Gutachtenart, sondern ein Flag (Fall ohne Anwalt).
 
-**Wichtig:** Die **Gutachtenart** (Leitfragen 1, 6, 10) steckt in `label_ids`,
-nicht in einem Custom Field. Der ETL muss die Gutachtenart aus den Labels der
-Gruppe {28, 36, 60, …} ableiten und die Alterungs-Flags {61,62,63} ignorieren.
+**Zentrale Erkenntnis für Leitfrage 1:** Pipedrive unterscheidet faktisch nur
+**Haftpflicht vs. Bewertung**. Die feingliedrige Gutachtenart (Kasko,
+Kurzgutachten, Reparaturbestätigung, Beweissicherung, Leasingrückläufer …)
+existiert **nicht** in Pipedrive-Labels → die Auftragsart-Dimension muss aus
+**autoiXpert** (Phase 4) kommen. Der ETL leitet aus `label_ids` nur die grobe
+Art {28, 36} ab.
 
-- **MENSCH:** Was ist Label **60**? Gibt es weitere Gutachtenart-Labels
-  (Kaskogutachten, Kurzgutachten, Reparaturbestätigung, Leasingrückläufer,
-  Beweissicherung …)? Das ist zugleich der in Phase 4 gewünschte Katalog der
-  Gutachtenarten.
-- Org-Labels: **32/35** wie oben — bitte bestätigen; gibt es weitere (z. B. für
+- **MENSCH (Q4):** Bestätigst du, dass die feine Gutachtenart aus autoiXpert
+  kommt? Und: welche Arten willst du als **eigene Auswertungsdimension** (das ist
+  zugleich der in Phase 4 gewünschte Katalog)? Das ist der einzige Teil von Q4,
+  den ich nicht aus den Daten holen kann.
+- Org-Labels **32/35** bestätigt (siehe `labels.md`); gibt es weitere (z. B.
   Werkstätten)?
 
 ---
 
 ## 6. Offene 🧑-MENSCH-Punkte aus Phase 0 (Checkliste)
 
-- [ ] **Pipedrive read-only Token** bereitstellen (+ Company-Domain) → dann
-      `npm run fetch:fields` für das autoritative Mapping.
-- [ ] Hypothesen in Abschnitt 3 bestätigen/korrigieren (Nutzungsausfall,
-      Vor-/Altschaden-Zuordnung, Datumsfelder).
-- [ ] `org_id`-Bedeutung/Prozess klären (Abschnitt 4) — **blockiert Phase 2**.
-- [ ] Label 60 und den Gutachtenart-Katalog klären (Abschnitt 5).
+- [x] Pipedrive-Zugang geklärt: **OAuth-MCP** (kein separater REST-Token).
+      `fetch-field-mapping.ts` bleibt als Fallback, falls je ein OAuth-REST-Token
+      bereitsteht (MCP liefert keine Feldmetadaten).
+- [x] `org_id`: Prozess **wird laut Inhaber verbessert**. Befüllung aktuell
+      51/100. ETL behandelt fehlende `org_id` explizit als „ohne
+      Versicherer-Zuordnung", nie coalescen.
+- [x] Hypothesen datenbasiert geprüft (Abschnitt 3). Rest-Bestätigungen offen:
+  - [ ] `cff1b2f6…` = Erwerbsdatum? (revidiert von Schadendatum)
+  - [ ] `215832fc…` = Nutzungsausfall-Tagessatz? (Label nicht aus Daten ableitbar)
+  - [ ] Zuordnung `efd97e60…`↔Vorschaden vs `3bc5c0f3…`↔Altschaden
+  - [ ] `62a4930b…` Datum, `621afa76…`/`b189ecbd…`/Org-Felder
+- [ ] **Q4 (offen):** feine Gutachtenart aus autoiXpert bestätigen + Katalog der
+      auswertungsrelevanten Arten liefern (Abschnitt 5).
+- [ ] **GitHub-Schreibrecht** für die Claude-App, damit Phase 0 gepusht werden
+      kann (git-Relay ist read-only, App-Integration ohne Schreibrecht).
 
-Nach Klärung: `field-mapping.json` aktualisieren (Token-Lauf + manuelle
-Semantik-Ergänzung), `npm run generate:fields`, dann Phase 1 planen.
+Diese Rest-❓ blockieren Phase 1 (Infrastruktur) **nicht**. Sie müssen vor der
+`fact_ausbuchung`-Modellierung in Phase 2 geschlossen sein.

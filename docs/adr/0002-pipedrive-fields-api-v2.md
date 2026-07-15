@@ -35,10 +35,22 @@ Quellen:
 `scripts/fetch-field-mapping.ts` nutzt die **v2**-Endpunkte mit
 Cursor-Pagination für alle drei Entitätstypen (Deal, Person, Organisation).
 
+## Nachtrag: Zugang läuft über den Pipedrive-OAuth-MCP
+
+Der Inhaber stellt Pipedrive **nicht** über einen persönlichen REST-Token bereit,
+sondern über den **OAuth-MCP-Server**. Konsequenz:
+
+- Der MCP stellt **kein** Feldmetadaten-Endpoint bereit (nur `getDeals`,
+  `getOrganizations` etc.). Damit lassen sich Feld-*labels* nur aus Werten
+  ableiten/verifizieren, nicht autoritativ auslesen.
+- `docs/field-mapping.json` bleibt daher vorerst „provisional-live-recon"
+  (Status je Feld). Die offenen Labels werden per Live-Sampling eingegrenzt und
+  vom Inhaber bestätigt (siehe `field-mapping-findings.md`).
+- `fetch-field-mapping.ts` bleibt im Repo und ist lauffähig, **falls** je ein
+  OAuth-Bearer-/REST-Token bereitsteht, der `/api/v2/dealFields` erreichen darf.
+
 ## Konsequenzen
 
-- Ein read-only Token reicht (🧑 MENSCH stellt ihn bereit).
-- Der Extraktor der Deal-Daten (Phase 2) nutzt weiterhin die im MCP/SDK
-  verfügbaren Deal-Endpunkte; die Feld*metadaten* kommen ausschließlich aus v2.
+- Der Extraktor der Deal-Daten (Phase 2) nutzt die MCP-/REST-Deal-Endpunkte.
 - Sollte Pipedrive die v2-Fields-Endpunkte ändern, ist nur dieses eine Skript
   betroffen; das committete `docs/field-mapping.json` bleibt reproduzierbar.

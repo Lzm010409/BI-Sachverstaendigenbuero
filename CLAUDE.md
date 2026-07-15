@@ -139,10 +139,12 @@ Siehe `docs/field-mapping.md` für die konkreten Hash-Keys und ihren Status.
 
 - Pipeline `2`. Stages: `6 Aufgenommen → 7 In Bearbeitung → 8 Versendet →
   9 Teilbezahlt → 10 Bezahlt (Won) → 11 Klage`.
-- **Gutachtenart steckt in `deal.label_ids`, nicht in einem Custom Field.**
-  `label_ids` mischen Gutachtenart (z. B. 28 = Haftpflichtgutachten,
-  36 = BEWERTUNG) mit Fall-Alterungs-Flags (61 Neuer / 62 Mittelalter /
-  63 Überfälliger Fall).
+- **`deal.label_ids` mischt drei Gruppen** (Katalog: `docs/labels.md`):
+  Gutachtenart (28 = Haftpflichgutachten, 36 = BEWERTUNG), Fall-Alterung
+  (61/62/63), Fall-Flag (60 = OHNE RECHTSANWALT). Der ETL muss sie trennen.
+  Pipedrive kennt nur die **grobe** Art (Haftpflicht vs. Bewertung); die feine
+  Gutachtenart (Kasko, Kurzgutachten, Reparaturbestätigung …) kommt aus
+  **autoiXpert** (Phase 4), nicht aus Pipedrive.
 - **Organisationen sind typisiert über `org.label_ids`:** 35 = Versicherer,
   32 = Auftraggeber/Anwalt/Privat. `deal.org_id` referenziert — wenn gesetzt —
   den Versicherer, ist aber **dünn befüllt**. Das ist die zentrale offene Lücke
