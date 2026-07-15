@@ -10,6 +10,10 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "migrate": "tsx scripts/migrate.ts",
+    "extract:deals": "tsx etl/pipedrive/extract-deals.ts",
+    "extract:orgs": "tsx etl/pipedrive/extract-organizations.ts",
+    "test:golden": "tsx scripts/test-golden.ts",
+    "load:golden": "tsx scripts/load-golden.ts",
     "fetch:fields": "tsx scripts/fetch-field-mapping.ts",
     "generate:fields": "tsx scripts/generate-fields.ts"
   },

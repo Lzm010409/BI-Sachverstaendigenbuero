@@ -1,9 +1,16 @@
 # Plan — Phase 2: Pipedrive → `fact_ausbuchung` → Metabase
 
-**Status:** ENTWURF zum Gegenlesen. Datenmodellierung = die eigentliche Arbeit
-dieser Phase; Code danach ist mechanisch. Bitte Abschnitt 9 (Entscheidungen) und
-die Domänenregeln in Abschnitt 5 genau prüfen — hier entstehen sonst Zahlen, die
-plausibel aussehen und falsch sind.
+**Status:** GEBAUT & lokal verifiziert (Views-Variante 9.1). Offen bleiben nur
+die MENSCH-Punkte (Golden-Gegenprüfung, Token, Belastbarkeits-Datum,
+Metabase-Frage). Datenmodellierung = die eigentliche Arbeit dieser Phase.
+
+## Verifikation (gegen echtes PostgreSQL 16, lokal)
+
+- migrate 001–004, Golden-Fixtures geladen, `test:golden` **20/20 grün**.
+- `ausgebucht_betrag` NULL bleibt NULL (5 NULL vs 6 Null-Beträge getrennt).
+- marts-Quote == Handrechnung exakt (Σaus 4337,79 / Σbasis 16980,11 = 0,2555).
+- `_rejects` fängt ungültige Aktenzeichen; `metabase_ro` liest marts/core, `raw`
+  verweigert.
 
 **Ziel:** Ein vollständiger, dünner Weg von der Quelle bis zur ersten Kennzahl.
 Nicht verbreitern, bevor er steht.

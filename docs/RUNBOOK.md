@@ -83,6 +83,25 @@ dropdb -h <host> -U <admin> warehouse_restore_test
 
 ---
 
+## Phase 2 — Pipedrive-Extraktion
+
+- **Extraktion** (im Coolify-Container, Pipedrive-Secrets gesetzt):
+  ```
+  npm run extract:orgs      # Organisationen -> raw.pipedrive_organizations
+  npm run extract:deals     # Deals (inkrementell) -> raw.pipedrive_deals
+  ```
+  Beide inkrementell über `raw._sync_state`. Erststart = Vollabzug.
+- **core/marts** sind Views über `raw` — kein Transform-Schritt, immer aktuell.
+- **Golden-Test nach jedem ETL-Lauf** (read-only, produktionssicher):
+  ```
+  npm run test:golden       # assertet 20 bekannte Deals gegen fixtures/golden-deals.json
+  ```
+  Schlägt er fehl, hat sich die Semantik verschoben → **nicht** ignorieren.
+- **Lokale Entwicklung ohne Pipedrive:** `ALLOW_LOAD_GOLDEN=1 npm run load:golden`
+  lädt die Fixtures in `raw` (leert `raw.pipedrive_deals` — nur lokal!).
+- **Benötigte Secrets** zusätzlich: `PIPEDRIVE_API_TOKEN` (read-only),
+  `PIPEDRIVE_COMPANY_DOMAIN`.
+
 ## Troubleshooting
 
 | Symptom | Ursache / Fix |

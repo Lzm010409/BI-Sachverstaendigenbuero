@@ -1,0 +1,725 @@
+{
+  "_hinweis": "KANDIDATEN aus echten Pipedrive-Deals (MCP). Werte von mir berechnet; bitte 🧑 von Hand gegenpruefen (deine Werte sind die Wahrheit). Test: scripts/test-golden.ts.",
+  "deals": [
+    {
+      "deal_id": 550,
+      "case": "ausgebucht_null",
+      "raw": {
+        "id": 550,
+        "title": "0225/1499TG",
+        "value": 1260.05,
+        "org_id": 107,
+        "status": "won",
+        "add_time": "2025-02-17T17:20:12Z",
+        "won_time": "2025-04-06T08:22:39Z",
+        "custom_fields": {
+          "c4ae5d687eacc0bbe5c05a1d70ec447644d4eb3f": null,
+          "a037653e87dd01a3ab9946c9741ff2db41de64f3": null,
+          "8e0a4e9266683b1a80cb216ab073e7c106fe85de": {
+            "value": 201.18,
+            "currency": "EUR"
+          },
+          "d8863fcbcb97aeb225a9418261b5508c0410783f": "90886539"
+        }
+      },
+      "erwartet_kandidat": {
+        "aktenzeichen": "0225/1499TG",
+        "deal_value_brutto": 1260.05,
+        "enthaltene_mwst": 201.18,
+        "ausgebucht_betrag": null,
+        "ausgebucht_grund_id": null,
+        "ist_erfasst": false,
+        "status": "won",
+        "org_id": 107,
+        "sevdesk_rechnung_id": "90886539"
+      }
+    },
+    {
+      "deal_id": 560,
+      "case": "ausgebucht_null",
+      "raw": {
+        "id": 560,
+        "title": "0225/1507TG",
+        "value": 777.44,
+        "org_id": 217,
+        "status": "won",
+        "add_time": "2025-02-26T10:29:04Z",
+        "won_time": "2025-04-06T08:22:41Z",
+        "custom_fields": {
+          "c4ae5d687eacc0bbe5c05a1d70ec447644d4eb3f": null,
+          "a037653e87dd01a3ab9946c9741ff2db41de64f3": null,
+          "8e0a4e9266683b1a80cb216ab073e7c106fe85de": {
+            "value": 124.13,
+            "currency": "EUR"
+          },
+          "d8863fcbcb97aeb225a9418261b5508c0410783f": "91718164"
+        }
+      },
+      "erwartet_kandidat": {
+        "aktenzeichen": "0225/1507TG",
+        "deal_value_brutto": 777.44,
+        "enthaltene_mwst": 124.13,
+        "ausgebucht_betrag": null,
+        "ausgebucht_grund_id": null,
+        "ist_erfasst": false,
+        "status": "won",
+        "org_id": 217,
+        "sevdesk_rechnung_id": "91718164"
+      }
+    },
+    {
+      "deal_id": 623,
+      "case": "ausgebucht_null",
+      "raw": {
+        "id": 623,
+        "title": "0425/1553TG",
+        "value": 868.06,
+        "org_id": null,
+        "status": "won",
+        "add_time": "2025-04-30T18:31:05Z",
+        "won_time": "2025-06-23T08:02:42Z",
+        "custom_fields": {
+          "c4ae5d687eacc0bbe5c05a1d70ec447644d4eb3f": null,
+          "a037653e87dd01a3ab9946c9741ff2db41de64f3": null,
+          "8e0a4e9266683b1a80cb216ab073e7c106fe85de": {
+            "value": 138.6,
+            "currency": "EUR"
+          },
+          "d8863fcbcb97aeb225a9418261b5508c0410783f": "95795797"
+        }
+      },
+      "erwartet_kandidat": {
+        "aktenzeichen": "0425/1553TG",
+        "deal_value_brutto": 868.06,
+        "enthaltene_mwst": 138.6,
+        "ausgebucht_betrag": null,
+        "ausgebucht_grund_id": null,
+        "ist_erfasst": false,
+        "status": "won",
+        "org_id": null,
+        "sevdesk_rechnung_id": "95795797"
+      }
+    },
+    {
+      "deal_id": 432,
+      "case": "ausgebucht_null",
+      "raw": {
+        "id": 432,
+        "title": "1124/1394TG",
+        "value": 1349.52,
+        "org_id": 158,
+        "status": "won",
+        "add_time": "2024-11-16T09:35:08Z",
+        "won_time": "2025-04-06T08:43:47Z",
+        "custom_fields": {
+          "c4ae5d687eacc0bbe5c05a1d70ec447644d4eb3f": null,
+          "a037653e87dd01a3ab9946c9741ff2db41de64f3": null,
+          "8e0a4e9266683b1a80cb216ab073e7c106fe85de": {
+            "value": 215.47,
+            "currency": "EUR"
+          },
+          "d8863fcbcb97aeb225a9418261b5508c0410783f": "84296674"
+        }
+      },
+      "erwartet_kandidat": {
+        "aktenzeichen": "1124/1394TG",
+        "deal_value_brutto": 1349.52,
+        "enthaltene_mwst": 215.47,
+        "ausgebucht_betrag": null,
+        "ausgebucht_grund_id": null,
+        "ist_erfasst": false,
+        "status": "won",
+        "org_id": 158,
+        "sevdesk_rechnung_id": "84296674"
+      }
+    },
+    {
+      "deal_id": 753,
+      "case": "ausgebucht_0_voll_bezahlt",
+      "raw": {
+        "id": 753,
+        "title": "0825/1684TG",
+        "value": 1414.86,
+        "org_id": null,
+        "status": "won",
+        "add_time": "2025-08-27T16:52:07Z",
+        "won_time": "2025-09-17T09:31:18Z",
+        "custom_fields": {
+          "c4ae5d687eacc0bbe5c05a1d70ec447644d4eb3f": {
+            "value": 0,
+            "currency": "EUR"
+          },
+          "a037653e87dd01a3ab9946c9741ff2db41de64f3": null,
+          "8e0a4e9266683b1a80cb216ab073e7c106fe85de": {
+            "value": 225.9,
+            "currency": "EUR"
+          },
+          "d8863fcbcb97aeb225a9418261b5508c0410783f": "104297760"
+        }
+      },
+      "erwartet_kandidat": {
+        "aktenzeichen": "0825/1684TG",
+        "deal_value_brutto": 1414.86,
+        "enthaltene_mwst": 225.9,
+        "ausgebucht_betrag": 0,
+        "ausgebucht_grund_id": null,
+        "ist_erfasst": true,
+        "status": "won",
+        "org_id": null,
+        "sevdesk_rechnung_id": "104297760"
+      }
+    },
+    {
+      "deal_id": 702,
+      "case": "ausgebucht_0_voll_bezahlt",
+      "raw": {
+        "id": 702,
+        "title": "0625/1633TG",
+        "value": 1251.82,
+        "org_id": 123,
+        "status": "won",
+        "add_time": "2025-06-28T22:14:03Z",
+        "won_time": "2025-09-17T09:30:27Z",
+        "custom_fields": {
+          "c4ae5d687eacc0bbe5c05a1d70ec447644d4eb3f": {
+            "value": 0,
+            "currency": "EUR"
+          },
+          "a037653e87dd01a3ab9946c9741ff2db41de64f3": null,
+          "8e0a4e9266683b1a80cb216ab073e7c106fe85de": {
+            "value": 199.87,
+            "currency": "EUR"
+          },
+          "d8863fcbcb97aeb225a9418261b5508c0410783f": "100358851"
+        }
+      },
+      "erwartet_kandidat": {
+        "aktenzeichen": "0625/1633TG",
+        "deal_value_brutto": 1251.82,
+        "enthaltene_mwst": 199.87,
+        "ausgebucht_betrag": 0,
+        "ausgebucht_grund_id": null,
+        "ist_erfasst": true,
+        "status": "won",
+        "org_id": 123,
+        "sevdesk_rechnung_id": "100358851"
+      }
+    },
+    {
+      "deal_id": 580,
+      "case": "ausgebucht_0_voll_bezahlt",
+      "raw": {
+        "id": 580,
+        "title": "0325/1525TG",
+        "value": 1545.76,
+        "org_id": 84,
+        "status": "won",
+        "add_time": "2025-03-17T20:08:04Z",
+        "won_time": "2025-09-17T09:28:40Z",
+        "custom_fields": {
+          "c4ae5d687eacc0bbe5c05a1d70ec447644d4eb3f": {
+            "value": 0,
+            "currency": "EUR"
+          },
+          "a037653e87dd01a3ab9946c9741ff2db41de64f3": null,
+          "8e0a4e9266683b1a80cb216ab073e7c106fe85de": {
+            "value": 246.8,
+            "currency": "EUR"
+          },
+          "d8863fcbcb97aeb225a9418261b5508c0410783f": "92598588"
+        }
+      },
+      "erwartet_kandidat": {
+        "aktenzeichen": "0325/1525TG",
+        "deal_value_brutto": 1545.76,
+        "enthaltene_mwst": 246.8,
+        "ausgebucht_betrag": 0,
+        "ausgebucht_grund_id": null,
+        "ist_erfasst": true,
+        "status": "won",
+        "org_id": 84,
+        "sevdesk_rechnung_id": "92598588"
+      }
+    },
+    {
+      "deal_id": 711,
+      "case": "ausgebucht_0_voll_bezahlt",
+      "raw": {
+        "id": 711,
+        "title": "0725/1644TG",
+        "value": 1927.04,
+        "org_id": 84,
+        "status": "won",
+        "add_time": "2025-07-13T13:53:03Z",
+        "won_time": "2025-09-25T19:11:46Z",
+        "custom_fields": {
+          "c4ae5d687eacc0bbe5c05a1d70ec447644d4eb3f": {
+            "value": 0,
+            "currency": "EUR"
+          },
+          "a037653e87dd01a3ab9946c9741ff2db41de64f3": null,
+          "8e0a4e9266683b1a80cb216ab073e7c106fe85de": {
+            "value": 307.68,
+            "currency": "EUR"
+          },
+          "d8863fcbcb97aeb225a9418261b5508c0410783f": "101559523"
+        }
+      },
+      "erwartet_kandidat": {
+        "aktenzeichen": "0725/1644TG",
+        "deal_value_brutto": 1927.04,
+        "enthaltene_mwst": 307.68,
+        "ausgebucht_betrag": 0,
+        "ausgebucht_grund_id": null,
+        "ist_erfasst": true,
+        "status": "won",
+        "org_id": 84,
+        "sevdesk_rechnung_id": "101559523"
+      }
+    },
+    {
+      "deal_id": 350,
+      "case": "ausgebucht_0_voll_bezahlt",
+      "raw": {
+        "id": 350,
+        "title": "1223/1037TG",
+        "value": 265.32,
+        "org_id": 126,
+        "status": "won",
+        "add_time": "2024-10-29T14:29:36Z",
+        "won_time": "2025-10-10T18:05:56Z",
+        "custom_fields": {
+          "c4ae5d687eacc0bbe5c05a1d70ec447644d4eb3f": {
+            "value": 0,
+            "currency": "EUR"
+          },
+          "a037653e87dd01a3ab9946c9741ff2db41de64f3": null,
+          "8e0a4e9266683b1a80cb216ab073e7c106fe85de": {
+            "value": 42.36,
+            "currency": "EUR"
+          },
+          "d8863fcbcb97aeb225a9418261b5508c0410783f": "104885004"
+        }
+      },
+      "erwartet_kandidat": {
+        "aktenzeichen": "1223/1037TG",
+        "deal_value_brutto": 265.32,
+        "enthaltene_mwst": 42.36,
+        "ausgebucht_betrag": 0,
+        "ausgebucht_grund_id": null,
+        "ist_erfasst": true,
+        "status": "won",
+        "org_id": 126,
+        "sevdesk_rechnung_id": "104885004"
+      }
+    },
+    {
+      "deal_id": 747,
+      "case": "ausgebucht_0_voll_bezahlt",
+      "raw": {
+        "id": 747,
+        "title": "0825/1680TG",
+        "value": 1668.45,
+        "org_id": 130,
+        "status": "won",
+        "add_time": "2025-08-20T18:41:02Z",
+        "won_time": "2025-09-25T19:12:26Z",
+        "custom_fields": {
+          "c4ae5d687eacc0bbe5c05a1d70ec447644d4eb3f": {
+            "value": 0,
+            "currency": "EUR"
+          },
+          "a037653e87dd01a3ab9946c9741ff2db41de64f3": null,
+          "8e0a4e9266683b1a80cb216ab073e7c106fe85de": {
+            "value": 266.39,
+            "currency": "EUR"
+          },
+          "d8863fcbcb97aeb225a9418261b5508c0410783f": "103673676"
+        }
+      },
+      "erwartet_kandidat": {
+        "aktenzeichen": "0825/1680TG",
+        "deal_value_brutto": 1668.45,
+        "enthaltene_mwst": 266.39,
+        "ausgebucht_betrag": 0,
+        "ausgebucht_grund_id": null,
+        "ist_erfasst": true,
+        "status": "won",
+        "org_id": 130,
+        "sevdesk_rechnung_id": "103673676"
+      }
+    },
+    {
+      "deal_id": 671,
+      "case": "ausgebucht_pos_mit_grund",
+      "raw": {
+        "id": 671,
+        "title": "0625/1608TG",
+        "value": 1600.51,
+        "org_id": 233,
+        "status": "won",
+        "add_time": "2025-06-02T21:16:05Z",
+        "won_time": "2026-05-22T08:00:29Z",
+        "custom_fields": {
+          "c4ae5d687eacc0bbe5c05a1d70ec447644d4eb3f": {
+            "value": 1600.51,
+            "currency": "EUR"
+          },
+          "a037653e87dd01a3ab9946c9741ff2db41de64f3": {
+            "id": 71,
+            "label": "Teilschuld"
+          },
+          "8e0a4e9266683b1a80cb216ab073e7c106fe85de": {
+            "value": 255.54,
+            "currency": "EUR"
+          },
+          "d8863fcbcb97aeb225a9418261b5508c0410783f": "98707910"
+        }
+      },
+      "erwartet_kandidat": {
+        "aktenzeichen": "0625/1608TG",
+        "deal_value_brutto": 1600.51,
+        "enthaltene_mwst": 255.54,
+        "ausgebucht_betrag": 1600.51,
+        "ausgebucht_grund_id": 71,
+        "ist_erfasst": true,
+        "status": "won",
+        "org_id": 233,
+        "sevdesk_rechnung_id": "98707910"
+      }
+    },
+    {
+      "deal_id": 989,
+      "case": "ausgebucht_pos_mit_grund",
+      "raw": {
+        "id": 989,
+        "title": "0426/1909TG",
+        "value": 901.14,
+        "org_id": 81,
+        "status": "won",
+        "add_time": "2026-04-20T20:23:04Z",
+        "won_time": "2026-06-18T08:00:55Z",
+        "custom_fields": {
+          "c4ae5d687eacc0bbe5c05a1d70ec447644d4eb3f": {
+            "value": 450.57,
+            "currency": "EUR"
+          },
+          "a037653e87dd01a3ab9946c9741ff2db41de64f3": {
+            "id": 71,
+            "label": "Teilschuld"
+          },
+          "8e0a4e9266683b1a80cb216ab073e7c106fe85de": {
+            "value": 143.88,
+            "currency": "EUR"
+          },
+          "d8863fcbcb97aeb225a9418261b5508c0410783f": "122535694"
+        }
+      },
+      "erwartet_kandidat": {
+        "aktenzeichen": "0426/1909TG",
+        "deal_value_brutto": 901.14,
+        "enthaltene_mwst": 143.88,
+        "ausgebucht_betrag": 450.57,
+        "ausgebucht_grund_id": 71,
+        "ist_erfasst": true,
+        "status": "won",
+        "org_id": 81,
+        "sevdesk_rechnung_id": "122535694"
+      }
+    },
+    {
+      "deal_id": 790,
+      "case": "ausgebucht_pos_mit_grund",
+      "raw": {
+        "id": 790,
+        "title": "1025/1720TG",
+        "value": 827.66,
+        "org_id": 35,
+        "status": "won",
+        "add_time": "2025-10-11T07:51:52Z",
+        "won_time": "2026-05-24T07:53:16Z",
+        "custom_fields": {
+          "c4ae5d687eacc0bbe5c05a1d70ec447644d4eb3f": {
+            "value": 827.66,
+            "currency": "EUR"
+          },
+          "a037653e87dd01a3ab9946c9741ff2db41de64f3": {
+            "id": 73,
+            "label": "Mangel an Beweisen"
+          },
+          "8e0a4e9266683b1a80cb216ab073e7c106fe85de": {
+            "value": 132.15,
+            "currency": "EUR"
+          },
+          "d8863fcbcb97aeb225a9418261b5508c0410783f": "107415031"
+        }
+      },
+      "erwartet_kandidat": {
+        "aktenzeichen": "1025/1720TG",
+        "deal_value_brutto": 827.66,
+        "enthaltene_mwst": 132.15,
+        "ausgebucht_betrag": 827.66,
+        "ausgebucht_grund_id": 73,
+        "ist_erfasst": true,
+        "status": "won",
+        "org_id": 35,
+        "sevdesk_rechnung_id": "107415031"
+      }
+    },
+    {
+      "deal_id": 761,
+      "case": "ausgebucht_pos_mit_grund",
+      "raw": {
+        "id": 761,
+        "title": "0925/1691TG",
+        "value": 1230.12,
+        "org_id": 118,
+        "status": "won",
+        "add_time": "2025-09-04T21:22:03Z",
+        "won_time": "2026-03-28T20:00:26Z",
+        "custom_fields": {
+          "c4ae5d687eacc0bbe5c05a1d70ec447644d4eb3f": {
+            "value": 154.65,
+            "currency": "EUR"
+          },
+          "a037653e87dd01a3ab9946c9741ff2db41de64f3": {
+            "id": 69,
+            "label": "Grundhonorar"
+          },
+          "8e0a4e9266683b1a80cb216ab073e7c106fe85de": {
+            "value": 196.41,
+            "currency": "EUR"
+          },
+          "d8863fcbcb97aeb225a9418261b5508c0410783f": "104872943"
+        }
+      },
+      "erwartet_kandidat": {
+        "aktenzeichen": "0925/1691TG",
+        "deal_value_brutto": 1230.12,
+        "enthaltene_mwst": 196.41,
+        "ausgebucht_betrag": 154.65,
+        "ausgebucht_grund_id": 69,
+        "ist_erfasst": true,
+        "status": "won",
+        "org_id": 118,
+        "sevdesk_rechnung_id": "104872943"
+      }
+    },
+    {
+      "deal_id": 752,
+      "case": "ausgebucht_pos_mit_grund",
+      "raw": {
+        "id": 752,
+        "title": "0825/1683TG",
+        "value": 879.72,
+        "org_id": 83,
+        "status": "won",
+        "add_time": "2025-08-26T19:01:58Z",
+        "won_time": "2026-03-28T20:00:26Z",
+        "custom_fields": {
+          "c4ae5d687eacc0bbe5c05a1d70ec447644d4eb3f": {
+            "value": 26.85,
+            "currency": "EUR"
+          },
+          "a037653e87dd01a3ab9946c9741ff2db41de64f3": {
+            "id": 69,
+            "label": "Grundhonorar"
+          },
+          "8e0a4e9266683b1a80cb216ab073e7c106fe85de": {
+            "value": 140.46,
+            "currency": "EUR"
+          },
+          "d8863fcbcb97aeb225a9418261b5508c0410783f": "104872936"
+        }
+      },
+      "erwartet_kandidat": {
+        "aktenzeichen": "0825/1683TG",
+        "deal_value_brutto": 879.72,
+        "enthaltene_mwst": 140.46,
+        "ausgebucht_betrag": 26.85,
+        "ausgebucht_grund_id": 69,
+        "ist_erfasst": true,
+        "status": "won",
+        "org_id": 83,
+        "sevdesk_rechnung_id": "104872936"
+      }
+    },
+    {
+      "deal_id": 585,
+      "case": "ausgebucht_pos_ohne_grund",
+      "raw": {
+        "id": 585,
+        "title": "0325/1531TG",
+        "value": 731.27,
+        "org_id": 221,
+        "status": "won",
+        "add_time": "2025-03-19T19:49:04Z",
+        "won_time": "2025-10-11T08:49:34Z",
+        "custom_fields": {
+          "c4ae5d687eacc0bbe5c05a1d70ec447644d4eb3f": {
+            "value": 114.3,
+            "currency": "EUR"
+          },
+          "a037653e87dd01a3ab9946c9741ff2db41de64f3": null,
+          "8e0a4e9266683b1a80cb216ab073e7c106fe85de": {
+            "value": 116.76,
+            "currency": "EUR"
+          },
+          "d8863fcbcb97aeb225a9418261b5508c0410783f": "92837748"
+        }
+      },
+      "erwartet_kandidat": {
+        "aktenzeichen": "0325/1531TG",
+        "deal_value_brutto": 731.27,
+        "enthaltene_mwst": 116.76,
+        "ausgebucht_betrag": 114.3,
+        "ausgebucht_grund_id": null,
+        "ist_erfasst": true,
+        "status": "won",
+        "org_id": 221,
+        "sevdesk_rechnung_id": "92837748"
+      }
+    },
+    {
+      "deal_id": 607,
+      "case": "ausgebucht_pos_ohne_grund",
+      "raw": {
+        "id": 607,
+        "title": "0425/1550TG",
+        "value": 975.46,
+        "org_id": 126,
+        "status": "won",
+        "add_time": "2025-04-11T19:19:08Z",
+        "won_time": "2025-10-10T19:09:49Z",
+        "custom_fields": {
+          "c4ae5d687eacc0bbe5c05a1d70ec447644d4eb3f": {
+            "value": 292.65,
+            "currency": "EUR"
+          },
+          "a037653e87dd01a3ab9946c9741ff2db41de64f3": null,
+          "8e0a4e9266683b1a80cb216ab073e7c106fe85de": {
+            "value": 155.75,
+            "currency": "EUR"
+          },
+          "d8863fcbcb97aeb225a9418261b5508c0410783f": "95089973"
+        }
+      },
+      "erwartet_kandidat": {
+        "aktenzeichen": "0425/1550TG",
+        "deal_value_brutto": 975.46,
+        "enthaltene_mwst": 155.75,
+        "ausgebucht_betrag": 292.65,
+        "ausgebucht_grund_id": null,
+        "ist_erfasst": true,
+        "status": "won",
+        "org_id": 126,
+        "sevdesk_rechnung_id": "95089973"
+      }
+    },
+    {
+      "deal_id": 355,
+      "case": "ausgebucht_pos_ohne_grund",
+      "raw": {
+        "id": 355,
+        "title": "1223/1032TG",
+        "value": 618.21,
+        "org_id": 121,
+        "status": "won",
+        "add_time": "2024-10-29T14:29:41Z",
+        "won_time": "2025-09-13T17:25:55Z",
+        "custom_fields": {
+          "c4ae5d687eacc0bbe5c05a1d70ec447644d4eb3f": {
+            "value": 618.21,
+            "currency": "EUR"
+          },
+          "a037653e87dd01a3ab9946c9741ff2db41de64f3": null,
+          "8e0a4e9266683b1a80cb216ab073e7c106fe85de": {
+            "value": 98.71,
+            "currency": "EUR"
+          },
+          "d8863fcbcb97aeb225a9418261b5508c0410783f": "64614720"
+        }
+      },
+      "erwartet_kandidat": {
+        "aktenzeichen": "1223/1032TG",
+        "deal_value_brutto": 618.21,
+        "enthaltene_mwst": 98.71,
+        "ausgebucht_betrag": 618.21,
+        "ausgebucht_grund_id": null,
+        "ist_erfasst": true,
+        "status": "won",
+        "org_id": 121,
+        "sevdesk_rechnung_id": "64614720"
+      }
+    },
+    {
+      "deal_id": 465,
+      "case": "ausgebucht_pos_ohne_grund",
+      "raw": {
+        "id": 465,
+        "title": "1224/1423TG",
+        "value": 1142.77,
+        "org_id": 160,
+        "status": "won",
+        "add_time": "2024-12-10T13:35:03Z",
+        "won_time": "2025-09-13T17:27:21Z",
+        "custom_fields": {
+          "c4ae5d687eacc0bbe5c05a1d70ec447644d4eb3f": {
+            "value": 252.39,
+            "currency": "EUR"
+          },
+          "a037653e87dd01a3ab9946c9741ff2db41de64f3": null,
+          "8e0a4e9266683b1a80cb216ab073e7c106fe85de": {
+            "value": 182.46,
+            "currency": "EUR"
+          },
+          "d8863fcbcb97aeb225a9418261b5508c0410783f": "86418244"
+        }
+      },
+      "erwartet_kandidat": {
+        "aktenzeichen": "1224/1423TG",
+        "deal_value_brutto": 1142.77,
+        "enthaltene_mwst": 182.46,
+        "ausgebucht_betrag": 252.39,
+        "ausgebucht_grund_id": null,
+        "ist_erfasst": true,
+        "status": "won",
+        "org_id": 160,
+        "sevdesk_rechnung_id": "86418244"
+      }
+    },
+    {
+      "deal_id": 986,
+      "case": "lost_null",
+      "raw": {
+        "id": 986,
+        "title": "0426/1905TG",
+        "value": 0.0,
+        "org_id": 118,
+        "status": "lost",
+        "add_time": "2026-04-14T21:11:03Z",
+        "won_time": null,
+        "custom_fields": {
+          "c4ae5d687eacc0bbe5c05a1d70ec447644d4eb3f": null,
+          "a037653e87dd01a3ab9946c9741ff2db41de64f3": null,
+          "8e0a4e9266683b1a80cb216ab073e7c106fe85de": {
+            "value": 0,
+            "currency": "EUR"
+          },
+          "d8863fcbcb97aeb225a9418261b5508c0410783f": null
+        }
+      },
+      "erwartet_kandidat": {
+        "aktenzeichen": "0426/1905TG",
+        "deal_value_brutto": 0.0,
+        "enthaltene_mwst": 0,
+        "ausgebucht_betrag": null,
+        "ausgebucht_grund_id": null,
+        "ist_erfasst": false,
+        "status": "lost",
+        "org_id": 118,
+        "sevdesk_rechnung_id": null
+      }
+    }
+  ]
+}
