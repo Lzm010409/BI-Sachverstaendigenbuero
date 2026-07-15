@@ -1,8 +1,9 @@
 # STATUS — Arbeitsstand & nächster Schritt
 
 Kurznotiz für Session-Wechsel (der Container ist ephemer; alles Wichtige ist
-committet). **Aktueller Arbeits-Branch: `claude/repo-deployment-setup-emf5b8`**
-(der Inhaber hat zugestimmt, Phase 3 ebenfalls auf diesem Branch zu bauen).
+committet). **Aktueller Arbeits-Branch: `claude/sevdesk-phase-3-9a7g5k`**
+(auf den Stand von `repo-deployment-setup-emf5b8` fast-forwarded; Phase 3 baut
+darauf auf).
 
 ## Erledigt (gepusht)
 
@@ -11,6 +12,10 @@ committet). **Aktueller Arbeits-Branch: `claude/repo-deployment-setup-emf5b8`**
   `scripts/backup.sh`, `docker-compose.yml`, `docs/RUNBOOK.md`.
 - **Phase 2** — Pipedrive→`fact_ausbuchung`→marts: `sql/002`–`004`, Pipedrive-
   Extraktoren, Golden-Set. **Deployt & live verifiziert** (s. u.).
+- **Phase 3** — sevDesk positionsscharf: `sql/005_raw_sevdesk.sql`,
+  `sql/006_core_sevdesk.sql`, `etl/sevdesk/{client,project,extract-invoices,extract-positions}.ts`,
+  Fixture + `scripts/{load,test}-sevdesk.ts`, `etl`-Deploy-Service ergänzt.
+  **Gebaut & lokal end-to-end verifiziert** (s. u.). **Noch nicht deployt.**
 
 ## Deployment Phase 2 (erledigt & verifiziert, 2026-07-15)
 
@@ -58,26 +63,47 @@ ETL-Ressource **`bi-etl-warehouse`** in Coolify (`coolify.gollenstede.app`, API 
 - Durchsetzungsquote (1 − Σ Ausbuchung / Σ Kürzung; Teilschuld/Haftungsquote
   raus) → **Phase 5** (braucht Phase 3).
 
-## NÄCHSTER SCHRITT — Phase 3 (sevDesk positionsscharf) BAUEN
+## Phase 3 (sevDesk positionsscharf) — gebaut & lokal verifiziert (2026-07-15)
 
-Plan liegt gegengelesen in **`docs/plan-phase-3.md`**. Fixe Entscheidungen:
-**DSGVO Option A** (Personenbezug gar nicht persistieren), Bau auf aktuellem Branch.
-Join steht: `fact_ausbuchung.sevdesk_rechnung_id` → sevDesk **Invoice-Objekt-ID**
-(per Deeplink bestätigt, z. B. Deal 355 → Rechnung `64614720`).
+**DSGVO Option A** umgesetzt: `etl/sevdesk/project.ts` reduziert Invoice/InvoicePos
+vor dem Schreiben auf ein personenbezugsfreies Whitelist-Projekt (kein `contact`,
+keine Adresse, kein Freitext `text`, kein eingebetteter Invoice-Block). Nur Beträge,
+Steuersätze, Positions-/Kategorie-Signale (`part`/`unity`), Rechnungs-Objekt-ID,
+Rechnungsnummer, Datumsfelder landen in `raw`.
 
-**BLOCKER:** Um korrekt/DSGVO-sicher zu bauen, muss die echte sevDesk-Struktur
-inspiziert werden. Dafür in der Session den **read-only `SEVDESK_API_TOKEN`**
-bereitstellen (wird ohnehin als Coolify-Secret gebraucht). Alternativ eine
-Beispiel-Rechnung inkl. Positionen als JSON (Namen geschwärzt).
-- sevDesk-API: `https://my.sevdesk.de/api/v1`, Endpunkte `Invoice`, `InvoicePos`
-  bzw. `Invoice/{id}/getPositions`; Auth `api_token`/Header; Pagination
-  `limit`/`offset`.
-- n8n hat ein „SevDesk"-Credential (`httpHeaderAuth`, ID `745fOXYVTHY5XVKf`),
-  aber das n8n-MCP lässt es nicht an einen HTTP-Node binden → Inspektion via n8n
-  hat nicht geklappt.
+**Struktur-Inspektion:** direkter sevDesk-Zugriff aus der Web-Session ist per
+Netzwerk-Policy geblockt (my./api.sevdesk.de → CONNECT-403), und das n8n-MCP bindet
+**keine** Credential an einen HTTP-Node (`sevDeskApi` **und** `httpHeaderAuth`
+abgelehnt). Lösung: Inhaber hat eine echte Rechnung (Objekt-ID `129183018`, Az
+`0726/2012TG`) inkl. 8 Positionen als JSON geliefert → Struktur daraus abgeleitet.
 
-Ablauf danach: Token → 1–2 echte Rechnungen inspizieren → `sql/005_raw_sevdesk.sql`
-(+ Option-A-Filter im Extraktor `etl/sevdesk/*`) → `sql/006_core_sevdesk.sql`
-(`fact_rechnungsposition`, `dim_positionskategorie`, marts) → Golden erweitern →
-`etl`-Deploy-Service um sevDesk-Extraktion ergänzen. Offen für den Inhaber:
-Positionskategorien-Katalog; ob Rechnungssumme brutto == Pipedrive `deal_value`.
+**Datenmodell:** `core.fact_rechnungsposition` (Grain: eine InvoicePos), Join zum
+Aktenzeichen zweistufig (primär `fact_ausbuchung.sevdesk_rechnung_id` == Invoice-
+Objekt-ID; Fallback: Aktenzeichen-Präfix aus `invoiceNumber`). `dim_positionskategorie`
+datengetrieben (CASE-Mapping, neue Namen → `Sonstiges`). Marts:
+`v_rechnungsposition_monat`, `v_position_je_kategorie`, `v_rechnung_konsistenz`.
+
+**Lokal end-to-end verifiziert** (Wegwerf-Postgres 16): Migrationen 001–006 sauber,
+`test:sevdesk` grün (DSGVO-Filter lässt keinen Personenbezug durch; 8 Positionen;
+Kategorien korrekt; Aktenzeichen abgeleitet), **Konsistenz `differenz=0`** (Σ
+Positionen brutto == Rechnung `sumGross` == 1480,19), DSGVO-Grants greifen
+(`metabase_ro` auf `raw` verweigert, core/marts erlaubt).
+
+**Bestätigt:** Σ Positionen (brutto) == Rechnung `sumGross`. **Offen (Inhaber):**
+- Ob Rechnung `sumGross` == Pipedrive `deal_value_brutto` (harter Cross-System-
+  Assert für Phase 5 — an dieser Rechnung nicht prüfbar, da Deal-Value nicht vorlag).
+- Kategorien-Katalog: CASE-Mapping in `sql/006` gegenlesen/ergänzen (aktuell aus
+  1 Rechnung abgeleitet; deckt SV-Honorar, Fahrtkosten, Lichtbilder, Porto/Telefon,
+  Bewertungsabfrage, EDV, Schichtdickenmessung, Restwertermittlung).
+- Annahme prüfen: `invoiceNumber`-Präfix == Aktenzeichen (Fallback-Join).
+
+## NÄCHSTER SCHRITT
+
+1. **Phase 3 deployen:** `SEVDESK_API_TOKEN` (+ optional `SEVDESK_API_BASE`,
+   `SEVDESK_SINCE`) als Coolify-Secret an `bi-etl-warehouse` setzen, dann Deploy
+   anstoßen (Migrationen 005/006 + sevDesk-Extraktion laufen mit). Danach live
+   verifizieren (Positionsanzahl, `v_rechnung_konsistenz.differenz`,
+   unkartierte Namen in `dim_positionskategorie` = `Sonstiges`).
+2. Offene Inhaber-Fragen (s. o.) klären, Katalog ggf. nachziehen.
+3. Danach **Phase 4 (autoiXpert)** oder **Phase 5 (Kürzungsgrund/Durchsetzungsquote)**
+   — Phase 5 hat mit Phase 3 jetzt ihr Positions-Fundament.

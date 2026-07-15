@@ -12,8 +12,12 @@
     "migrate": "tsx scripts/migrate.ts",
     "extract:deals": "tsx etl/pipedrive/extract-deals.ts",
     "extract:orgs": "tsx etl/pipedrive/extract-organizations.ts",
+    "extract:invoices": "tsx etl/sevdesk/extract-invoices.ts",
+    "extract:positions": "tsx etl/sevdesk/extract-positions.ts",
     "test:golden": "tsx scripts/test-golden.ts",
+    "test:sevdesk": "tsx scripts/test-sevdesk.ts",
     "load:golden": "tsx scripts/load-golden.ts",
+    "load:sevdesk": "tsx scripts/load-sevdesk.ts",
     "fetch:fields": "tsx scripts/fetch-field-mapping.ts",
     "generate:fields": "tsx scripts/generate-fields.ts"
   },

@@ -9,14 +9,16 @@
 # Siehe docs/RUNBOOK.md.
 
 services:
-  # Deploy-Lauf: Migrationen -> Pipedrive-Extraktion. Laeuft bei jedem Deploy
-  # durch und beendet sich (exit 0 = Erfolg, sonst schlaegt der Deploy fehl).
-  # Beide Schritte idempotent/inkrementell:
-  #   migrate  = ueberspringt bereits angewandte Dateien
-  #   extract  = inkrementell ueber raw._sync_state
-  # Der Golden-Check ist BEWUSST kein Deploy-Gate: legitime Datenaenderungen in
-  # Pipedrive (z. B. nachgetragener Ausbuchungsgrund) wuerden sonst jeden Deploy
-  # und jede Extraktion blockieren. Golden laeuft als eigener `golden`-Service.
+  # Deploy-Lauf: Migrationen -> Pipedrive- -> sevDesk-Extraktion. Laeuft bei jedem
+  # Deploy durch und beendet sich (exit 0 = Erfolg, sonst schlaegt der Deploy fehl).
+  # Alle Schritte idempotent/inkrementell:
+  #   migrate           = ueberspringt bereits angewandte Dateien (001-006)
+  #   extract (pipedrive) = inkrementell ueber raw._sync_state
+  #   extract (sevdesk)   = voller Abzug ab SEVDESK_SINCE, idempotenter Upsert;
+  #                         Positionen je Rechnung nachgeladen
+  # Der Golden-Check ist BEWUSST kein Deploy-Gate: legitime Datenaenderungen in den
+  # Quellen wuerden sonst jeden Deploy und jede Extraktion blockieren. Golden/
+  # sevDesk-Test laufen als eigene Services (profile manual).
   etl:
     build:
       context: .
@@ -27,7 +29,9 @@ services:
       - >
         npx tsx scripts/migrate.ts &&
         npx tsx etl/pipedrive/extract-organizations.ts &&
-        npx tsx etl/pipedrive/extract-deals.ts
+        npx tsx etl/pipedrive/extract-deals.ts &&
+        npx tsx etl/sevdesk/extract-invoices.ts &&
+        npx tsx etl/sevdesk/extract-positions.ts
     environment:
       WAREHOUSE_DB_HOST: ${WAREHOUSE_DB_HOST}
       WAREHOUSE_DB_PORT: ${WAREHOUSE_DB_PORT:-5432}
@@ -36,6 +40,9 @@ services:
       ETL_DB_PASSWORD: ${ETL_DB_PASSWORD}
       PIPEDRIVE_API_TOKEN: ${PIPEDRIVE_API_TOKEN}
       PIPEDRIVE_COMPANY_DOMAIN: ${PIPEDRIVE_COMPANY_DOMAIN}
+      SEVDESK_API_TOKEN: ${SEVDESK_API_TOKEN}
+      SEVDESK_API_BASE: ${SEVDESK_API_BASE:-https://my.sevdesk.de/api/v1}
+      SEVDESK_SINCE: ${SEVDESK_SINCE:-2024-01-01}
     networks:
       - warehouse
     restart: "no"
@@ -48,6 +55,25 @@ services:
       context: .
       dockerfile: docker/migrate.Dockerfile
     command: ["npx", "tsx", "scripts/test-golden.ts"]
+    environment:
+      WAREHOUSE_DB_HOST: ${WAREHOUSE_DB_HOST}
+      WAREHOUSE_DB_PORT: ${WAREHOUSE_DB_PORT:-5432}
+      WAREHOUSE_DB_NAME: ${WAREHOUSE_DB_NAME:-warehouse}
+      ETL_DB_USER: ${ETL_DB_USER:-etl}
+      ETL_DB_PASSWORD: ${ETL_DB_PASSWORD}
+    networks:
+      - warehouse
+    profiles: ["manual"]
+    restart: "no"
+
+  # sevDesk-Test (read-only): DSGVO-Filter + Positionsstruktur + Konsistenz gegen
+  # die bekannte Beispiel-Rechnung. Kein Deploy-Gate.
+  # Manuell/als Scheduled Task:  docker compose run --rm sevdesk-test
+  sevdesk-test:
+    build:
+      context: .
+      dockerfile: docker/migrate.Dockerfile
+    command: ["npx", "tsx", "scripts/test-sevdesk.ts"]
     environment:
       WAREHOUSE_DB_HOST: ${WAREHOUSE_DB_HOST}
       WAREHOUSE_DB_PORT: ${WAREHOUSE_DB_PORT:-5432}

@@ -1,0 +1,136 @@
+{
+  "_hinweis": "Eine echte sevDesk-Rechnung (Objekt-ID 129183018, Aktenzeichen 0726/2012TG), bereits DSGVO-gefiltert (Option A: kein contact, keine Adresse, keine Freitexte). Die Werte sind die projectInvoice()/projectPosition()-Ausgabe. Ein Serialisierungs-Artefakt des Export-Tools (quantity/positionNumber 1->true) wurde auf die von der REST-API gelieferte numerische Form zuruecknormalisiert; arithmetisch belegt (price==sumNet bei Menge 1). Sum der Positionen brutto == Rechnung sumGross == 1480.19.",
+  "invoices": [
+    {
+      "id": 129183018,
+      "raw": {
+        "id": "129183018",
+        "objectName": "Invoice",
+        "invoiceNumber": "0726/2012TG01",
+        "invoiceDate": "2026-07-14T00:00:00+02:00",
+        "deliveryDate": "2026-07-14T00:00:00+02:00",
+        "sendDate": "2026-07-14T00:00:00+02:00",
+        "status": "100",
+        "invoiceType": "RE",
+        "sendType": "VPR",
+        "timeToPay": "30",
+        "currency": "EUR",
+        "taxRate": "19",
+        "taxText": "Umsatzsteuer 19%",
+        "taxType": null,
+        "taxRule": { "id": "1", "objectName": "TaxRule" },
+        "smallSettlement": "0",
+        "showNet": "1",
+        "discount": "0",
+        "sumNet": "1243.85",
+        "sumTax": "236.34",
+        "sumGross": "1480.19",
+        "sumDiscounts": "0",
+        "sumNetAccounting": "1243.85",
+        "sumTaxAccounting": "236.34",
+        "sumGrossAccounting": "1480.19",
+        "paidAmount": 0,
+        "create": "2026-07-14T15:05:52+02:00",
+        "update": "2026-07-14T15:05:52+02:00"
+      }
+    }
+  ],
+  "positions": [
+    {
+      "id": 345467434,
+      "invoice_id": 129183018,
+      "raw": {
+        "id": "345467434", "objectName": "InvoicePos", "invoice_id": "129183018",
+        "positionNumber": 1, "quantity": 1, "price": 1109.85, "name": "SV-Honorar",
+        "taxRate": 19, "sumNet": 1109.85, "sumTax": 210.87, "sumGross": 1320.72, "sumDiscount": 0,
+        "priceNet": 1109.85, "priceGross": 1320.7215, "priceTax": 210.8715,
+        "unity": { "id": "7", "name": "pauschal", "translationCode": "UNITY_BLANKET" },
+        "part": { "id": "25069008", "name": "SV-Honorar", "partNumber": "1002", "category": { "id": "617272", "objectName": "Category" } }
+      }
+    },
+    {
+      "id": 345467435,
+      "invoice_id": 129183018,
+      "raw": {
+        "id": "345467435", "objectName": "InvoicePos", "invoice_id": "129183018",
+        "positionNumber": 2, "quantity": 26, "price": 1.5, "name": "Lichtbilder",
+        "taxRate": 19, "sumNet": 39, "sumTax": 7.41, "sumGross": 46.41, "sumDiscount": 0,
+        "priceNet": 1.5, "priceGross": 1.785, "priceTax": 0.285,
+        "unity": { "id": "37", "name": "", "translationCode": "UNITY_EMPTY" },
+        "part": { "id": "37550092", "name": "undefiniert", "partNumber": "1021", "category": { "id": "1", "objectName": "Category" } }
+      }
+    },
+    {
+      "id": 345467436,
+      "invoice_id": 129183018,
+      "raw": {
+        "id": "345467436", "objectName": "InvoicePos", "invoice_id": "129183018",
+        "positionNumber": 3, "quantity": 35, "price": 0.8, "name": "Fahrtkosten",
+        "taxRate": 19, "sumNet": 28, "sumTax": 5.32, "sumGross": 33.32, "sumDiscount": 0,
+        "priceNet": 0.8, "priceGross": 0.952, "priceTax": 0.152,
+        "unity": { "id": "10", "name": "km", "translationCode": "UNITY_KILOMETER" },
+        "part": { "id": "25069138", "name": "Fahrtkosten", "partNumber": "1004", "category": { "id": "617273", "objectName": "Category" } }
+      }
+    },
+    {
+      "id": 345467437,
+      "invoice_id": 129183018,
+      "raw": {
+        "id": "345467437", "objectName": "InvoicePos", "invoice_id": "129183018",
+        "positionNumber": 4, "quantity": 1, "price": 15, "name": "Porto &amp; Telefon (pauschal)",
+        "taxRate": 19, "sumNet": 15, "sumTax": 2.85, "sumGross": 17.85, "sumDiscount": 0,
+        "priceNet": 15, "priceGross": 17.85, "priceTax": 2.85,
+        "unity": { "id": "37", "name": "", "translationCode": "UNITY_EMPTY" },
+        "part": { "id": "37550092", "name": "undefiniert", "partNumber": "1021", "category": { "id": "1", "objectName": "Category" } }
+      }
+    },
+    {
+      "id": 345467438,
+      "invoice_id": 129183018,
+      "raw": {
+        "id": "345467438", "objectName": "InvoicePos", "invoice_id": "129183018",
+        "positionNumber": 5, "quantity": 1, "price": 10, "name": "Bewertungsabfrage",
+        "taxRate": 19, "sumNet": 10, "sumTax": 1.9, "sumGross": 11.9, "sumDiscount": 0,
+        "priceNet": 10, "priceGross": 11.9, "priceTax": 1.9,
+        "unity": { "id": "7", "name": "pauschal", "translationCode": "UNITY_BLANKET" },
+        "part": { "id": "33739732", "name": "Bewertungsabfrage", "partNumber": "1020", "category": { "id": "617275", "objectName": "Category" } }
+      }
+    },
+    {
+      "id": 345467439,
+      "invoice_id": 129183018,
+      "raw": {
+        "id": "345467439", "objectName": "InvoicePos", "invoice_id": "129183018",
+        "positionNumber": 6, "quantity": 1, "price": 12.5, "name": "EDV Kosten",
+        "taxRate": 19, "sumNet": 12.5, "sumTax": 2.38, "sumGross": 14.88, "sumDiscount": 0,
+        "priceNet": 12.5, "priceGross": 14.875, "priceTax": 2.375,
+        "unity": { "id": "37", "name": "", "translationCode": "UNITY_EMPTY" },
+        "part": { "id": "37550092", "name": "undefiniert", "partNumber": "1021", "category": { "id": "1", "objectName": "Category" } }
+      }
+    },
+    {
+      "id": 345467440,
+      "invoice_id": 129183018,
+      "raw": {
+        "id": "345467440", "objectName": "InvoicePos", "invoice_id": "129183018",
+        "positionNumber": 7, "quantity": 1, "price": 10, "name": "Schichtdickenmessung",
+        "taxRate": 19, "sumNet": 10, "sumTax": 1.9, "sumGross": 11.9, "sumDiscount": 0,
+        "priceNet": 10, "priceGross": 11.9, "priceTax": 1.9,
+        "unity": { "id": "37", "name": "", "translationCode": "UNITY_EMPTY" },
+        "part": { "id": "37550092", "name": "undefiniert", "partNumber": "1021", "category": { "id": "1", "objectName": "Category" } }
+      }
+    },
+    {
+      "id": 345467441,
+      "invoice_id": 129183018,
+      "raw": {
+        "id": "345467441", "objectName": "InvoicePos", "invoice_id": "129183018",
+        "positionNumber": 8, "quantity": 1, "price": 19.5, "name": "Restwertermittlung",
+        "taxRate": 19, "sumNet": 19.5, "sumTax": 3.71, "sumGross": 23.21, "sumDiscount": 0,
+        "priceNet": 19.5, "priceGross": 23.205, "priceTax": 3.705,
+        "unity": { "id": "1", "name": "Stk", "translationCode": "UNITY_PIECE" },
+        "part": { "id": "29211250", "name": "Restwertermittlung", "partNumber": "1018", "category": { "id": "1", "objectName": "Category" } }
+      }
+    }
+  ]
+}
