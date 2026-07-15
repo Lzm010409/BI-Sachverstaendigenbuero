@@ -60,6 +60,16 @@ committet). **Zuerst diese Datei + `CLAUDE.md` lesen.**
 
 ---
 
+## AKTUELLER STAND (2026-07-15)
+
+- **Phase 4 (autoiXpert): PAUSIERT** — Unterbau gebaut & verifiziert, aber die
+  numerischen Fachwerte stehen nur im PDF; der Inhaber klärt die PDF-Verarbeitung.
+  Details + Wiederaufnahme: **`docs/status-phase-4.md`**.
+- **Phase 5 (Kürzungsgrund/Durchsetzungsquote): GESTARTET** — Plan-Entwurf liegt
+  vor: **`docs/plan-phase-5.md`** (gegenlesen). Kernentscheidung offen: **woher die
+  initiale Kürzung kommt** (§2/§8.1) — es gibt kein Kürzungs-Feld in Pipedrive, nur
+  Ausbuchung. Ohne Kürzungsquelle ist die Durchsetzungsquote nicht berechenbar.
+
 ## NÄCHSTE SCHRITTE (Auswahl beim Neustart)
 
 ### Option A — Phase 4 (autoiXpert)  *(Unterbau gebaut & verifiziert; Architekturfrage offen)*
