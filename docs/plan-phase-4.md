@@ -152,7 +152,7 @@ zugehörigen Deal mitgegeben. Migration `sql/009_raw_autoixpert.sql`.
   - `v_totalschaden_quote` — Anteil Totalschaden / 130-%-Fälle je Zeitraum, später
     Korrelation mit Kürzungen (Leitfrage 10).
 
-Migration `sql/010_core_autoixpert.sql`.
+Migration `sql/011_core_autoixpert.sql`.
 
 ---
 
@@ -214,6 +214,6 @@ Optionen:
 - [x] `AUTOIXPERT_API_TOKEN` gesetzt (Coolify-Secret, Bearer)
 - [ ] **ENTSCHEIDUNG Fachwert-Quelle** (§7 A–D) — Voraussetzung für LF8/LF10
 - [ ] `extract:gutachten` in die Deploy-Kette (docker-compose) — erst nach Gegenlesen
-- [ ] `sql/010_core_autoixpert.sql` (`core.fact_gutachten` + `v_versicherer_je_fall`
+- [ ] `sql/011_core_autoixpert.sql` (`core.fact_gutachten` + `v_versicherer_je_fall`
       für LF2; `v_bvsk_korridor`/`v_totalschaden_quote` sobald Fachwerte fließen)
 - [ ] Golden erweitern (DSGVO-redigiertes Fixture) + verifizieren

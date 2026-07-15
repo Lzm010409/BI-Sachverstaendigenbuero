@@ -57,18 +57,33 @@ ist die Durchsetzungsquote nicht berechenbar. Befund der Feldrecherche:
   und ggf. nach Pipedrive fließen (Ziel-Feld unklar; evtl. Note/Activity statt
   Custom Field).
 
-**Kandidaten-Quellen (Inhaber entscheidet):**
-- **(a) autoiXpert Stellungnahme / `expert_statement`** — fachlich die richtige
-  Quelle: die Kürzung wird je Position beim Erstellen der Stellungnahme erfasst.
-  Zugriff derzeit unklar (Phase-4-Befund: viele Fachwerte nur im PDF; Egress
-  geblockt). Zu prüfen, ob die externalApi Stellungnahme-/Kürzungs-Positionen
-  strukturiert liefert.
-- **(b) sevDesk `sumGross − paidAmount`** — die Differenz aus berechnet vs. bezahlt.
-  Enthält aber ALLES (Kürzung + Teilschuld + noch-nicht-bezahlt) und ist kein
-  „initialer Kürzungsbetrag" → nur grobe Näherung, vermischt Größen. Nicht sauber.
-- **(c) Manuelle/prozessuale Erfassung** — ein neues Pipedrive-Feld „Kürzungsbetrag"
-  (+ Grund, + Stellungnahme-Erfolg) analog zum Ausbuchungsfeld, das der Inhaber im
-  Prozess füllt. Sauber, aber Erfassungsaufwand.
+**ENTSCHIEDEN (Inhaber, 2026-07-15): sevDesk-Differenz.** Die Kürzung wird aus der
+sevDesk-Rechnung abgeleitet, mit einer präzisen Domänenregel:
+
+> **Kürzung := `sumGross − paidAmount` (offener Betrag) je Rechnung.** Der offene
+> Betrag IST immer die Kürzung — **außer** er entspricht (±5 ct) der **MwSt** der
+> Rechnung. Dann hat der Versicherer nur die **USt einbehalten** (Geschädigter
+> vorsteuerabzugsberechtigt) → **keine Kürzung.**
+
+Zwingende Zusätze aus den Domänenregeln (CLAUDE.md), die über der Faustregel stehen:
+- **Nur geschlossene Fälle** (`status = 'won'`). Bei offenen Fällen ist die Differenz
+  nur „noch nicht bezahlt", keine Kürzung.
+- **`null ≠ 0`:** ist `paidAmount` nicht erfasst (null), ist keine Kürzungsaussage
+  möglich → `kuerzung_betrag = null` (nicht 0).
+- **Teilschuld/Haftungsquote bleibt getrennt.** Fälle mit
+  `ausgebucht_grund = Teilschuld (71)` gehören NICHT in den Kürzungstopf, auch wenn
+  eine Differenz existiert — sonst sieht ein korrekt regulierender Versicherer
+  schlecht aus. Markiert als `ist_haftungsquote`, in allen Kürzungs-Auswertungen
+  ausgeschlossen. **(Diese Regel setze ich über die Inhaber-Faustregel „Differenzen
+  sind immer Kürzungen" — bitte gegenlesen.)**
+
+**Grain-Konsequenz:** `paidAmount` ist rechnungsscharf, nicht positionsscharf →
+Kürzung entsteht **je Rechnung/Fall**, nicht je Position. „Welche Position wird
+gekürzt" (LF2/LF3 positionsscharf) ist mit dieser Quelle NICHT beantwortbar; dafür
+bräuchte es die autoiXpert-Stellungnahme (später).
+
+**Verworfen:** (a) autoiXpert-Stellungnahme (Zugriff unklar, viele Werte nur im PDF),
+(c) neues Pipedrive-Feld (Erfassungsaufwand).
 
 ---
 
@@ -122,8 +137,12 @@ sobald der Phase-4-Extraktor läuft.
 - `marts.v_stellungnahme_roi` — durchgesetzter Betrag vs. Aufwand (LF3: lohnt sich?).
 - `marts.v_haftungsquote` — Teilschuld-Fälle getrennt (Kontrolle, nicht Kürzung).
 
-Migration `sql/010_*` (Nummer prüfen — Phase 4 reserviert `sql/010` noch nicht
-gebaut; ggf. `sql/011`). Idempotent, Views über raw/core, kein Transform-Schritt.
+Migration **`sql/010_core_kuerzung.sql` — GEBAUT & lokal verifiziert** (Views über
+raw/core, kein Transform-Schritt). Phase-4-Core rückt auf `sql/011`.
+
+**Verifikation (lokales Postgres, gezielte Testfälle):** MwSt-Einbehalt (offen ≈
+Steuer → keine Kürzung), Haftungsquote/Teilschuld (grund 71 → 0, getrennt), nur
+`status='won'`, `paidAmount` null → `kuerzung_betrag` null (null≠0) — alle korrekt.
 
 ---
 
@@ -137,28 +156,44 @@ Versicherer/Werkstatt/Anwalt als juristische Personen im Klartext erlaubt.
 
 ## 8. Offene Fragen an den Inhaber
 
-1. **Kürzungsquelle (§2) — die Kernfrage:** Wo wird die *initiale* Kürzung erfasst?
-   autoiXpert-Stellungnahme (strukturiert abrufbar?), sevDesk-Differenz (unsauber),
-   oder soll ein neues Pipedrive-Feld „Kürzungsbetrag" den Prozess erfassen?
-2. **Grain:** Kürzung je **Position** (ideal für „welche Position wird gekürzt") oder
-   nur je **Fall/Rechnung** (gröber, aber einfacher)?
-3. **Kürzungsgrund-Enum:** `Ausgebucht Grund` umbenennen/aufteilen? Finale Werteliste
-   (inkl. sauberer Trennung Teilschuld/Haftungsquote)?
-4. **Stellungnahme-Erfolg:** Gibt es ein Signal/Feld, ob eine Stellungnahme
-   erfolgreich war (durchgesetzt ja/nein bzw. Betrag)? Nötig für LF3-ROI.
-5. **Versicherer je Fall:** autoiXpert (Phase 4) als primäre Quelle für LF2
-   freigeben?
+- ~~Kürzungsquelle~~ — **ENTSCHIEDEN: sevDesk-Differenz** (§2), gebaut & verifiziert.
+- ~~Grain~~ — folgt aus der Quelle: **je Rechnung/Fall** (paidAmount ist nicht
+  positionsscharf). Positionsscharfe Kürzung („welche Position") bleibt offen.
+
+**Wichtigster Befund — LF3 (Durchsetzungsquote) ist mit diesen Quellen noch nicht
+messbar:** `v_durchsetzung` an Echtdaten zeigt (lokal reproduziert): die
+sevDesk-Differenz (Kürzung) und die Pipedrive-Ausbuchung sind bei geschlossenen
+Fällen praktisch **dieselbe** Größe (beide = finaler Fehlbetrag) → Durchsetzungsquote
+≈ 0. Das **Kürzungsvolumen** (LF2) ist voll da; die **Durchsetzung** (was per
+Stellungnahme zurückgeholt wurde) braucht ein **separates Signal**:
+
+1. **Stellungnahme-Erfolg:** Gibt es je Fall den *ursprünglich* gekürzten Betrag
+   ODER den per Stellungnahme durchgesetzten Betrag getrennt vom finalen Verlust?
+   (z. B. in autoiXpert, oder als neues Pipedrive-Feld.) Ohne das misst das System
+   nur, *dass* gekürzt wurde, nicht, wie viel *durchgesetzt* wurde.
+2. **Kürzungsgrund-Enum:** `Ausgebucht Grund` in `Kürzungsgrund` umbenennen/aufteilen?
+   Finale Werteliste (Teilschuld/Haftungsquote sauber getrennt)?
+3. **Versicherer je Fall:** autoiXpert (Phase 4) als primäre Quelle für LF2
+   freigeben? (Aktuell `org_id` → `dim_organisation`, dünn befüllt.)
+4. **USt-Einbehalt-Toleranz:** ±5 ct bestätigt? Und: kann eine Rechnung *gleichzeitig*
+   USt-Einbehalt UND echte Kürzung tragen (dann greift die ±5-ct-Regel nicht — heute
+   als reine Kürzung gewertet)?
 
 ---
 
 ## 9. Reihenfolge / Checkliste
 
-- [ ] Kürzungsquelle mit Inhaber klären (§2/§8.1) — blockiert Szenario A
-- [ ] Kürzungsgrund-Enum final (§4/§8.3)
-- [ ] `fact_kuerzung` modellieren (Grain je Antwort auf §8.2)
-- [ ] marts: `v_durchsetzungsquote`, `v_kuerzung_je_position`, `v_stellungnahme_roi`,
-      `v_haftungsquote`
-- [ ] Versicherer-Join (autoiXpert/Phase 4 oder org_id) verdrahten
-- [ ] Golden/Plausibilität: Σ Ausbuchung ≤ Σ Kürzung; Haftungsquote nie im
-      Kürzungstopf; Durchsetzungsquote ∈ [0,1]
+- [x] Kürzungsquelle mit Inhaber geklärt (§2): sevDesk-Differenz + USt-Regel
+- [x] `core.fact_kuerzung` gebaut (`sql/010`), Grain je Rechnung/Fall, Teilschuld
+      getrennt, USt-Einbehalt-Ausnahme, nur `won`, null≠0
+- [x] marts `v_kuerzung_je_versicherer` (LF2), `v_kuerzung_je_grund`,
+      `v_kuerzung_monat`, `v_durchsetzung` (Fundament LF3)
+- [x] Logik lokal an gezielten Testfällen verifiziert
+- [ ] **An Prod-Daten prüfen** (Metabase): Coverage des Aktenzeichen-Joins,
+      Verteilung Kürzungsquote je Versicherer, Bestätigung der LF3-Degeneration
+- [ ] **LF3 freischalten:** Stellungnahme-Erfolg-Signal (§8.1) — dann echte
+      Durchsetzungsquote
+- [ ] Kürzungsgrund-Enum final (§8.2); Versicherer-Join autoiXpert (§8.3)
+- [ ] `sql/010` in die Deploy-Kette? (reine Views, laufen mit `migrate` — kein
+      Extraktor nötig; nach Gegenlesen)
 - [ ] Metabase-Dashboards (Phase 7)

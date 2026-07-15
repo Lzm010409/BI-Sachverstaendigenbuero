@@ -65,10 +65,15 @@ committet). **Zuerst diese Datei + `CLAUDE.md` lesen.**
 - **Phase 4 (autoiXpert): PAUSIERT** — Unterbau gebaut & verifiziert, aber die
   numerischen Fachwerte stehen nur im PDF; der Inhaber klärt die PDF-Verarbeitung.
   Details + Wiederaufnahme: **`docs/status-phase-4.md`**.
-- **Phase 5 (Kürzungsgrund/Durchsetzungsquote): GESTARTET** — Plan-Entwurf liegt
-  vor: **`docs/plan-phase-5.md`** (gegenlesen). Kernentscheidung offen: **woher die
-  initiale Kürzung kommt** (§2/§8.1) — es gibt kein Kürzungs-Feld in Pipedrive, nur
-  Ausbuchung. Ohne Kürzungsquelle ist die Durchsetzungsquote nicht berechenbar.
+- **Phase 5 (Kürzungsgrund/Durchsetzungsquote): GEBAUT (Kürzungsvolumen), verifiziert.**
+  Plan: **`docs/plan-phase-5.md`** (gegenlesen). Inhaber-Entscheidung: **Kürzung =
+  sevDesk-Differenz** (`sumGross − paidAmount`), außer ±5 ct = MwSt (USt-Einbehalt).
+  `sql/010_core_kuerzung.sql`: `core.fact_kuerzung` + marts `v_kuerzung_je_versicherer`
+  (LF2), `v_kuerzung_je_grund`, `v_kuerzung_monat`, `v_durchsetzung`. Nur `won`,
+  Teilschuld/Haftungsquote getrennt, null≠0 — lokal an Testfällen verifiziert.
+  **Offen:** LF3 (echte Durchsetzungsquote) braucht ein separates Stellungnahme-
+  Erfolg-Signal — sevDesk-Differenz ≈ Ausbuchung bei geschlossenen Fällen (Quote ≈ 0).
+  Nächstes: an Prod-Daten (Metabase) prüfen; `sql/010` deployen.
 
 ## NÄCHSTE SCHRITTE (Auswahl beim Neustart)
 

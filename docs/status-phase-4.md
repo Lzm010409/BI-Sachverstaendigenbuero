@@ -81,7 +81,7 @@ BEIDE Samples geprüft — **kein PII-Leak**.
 
 1. Fachwert-Quelle je Entscheidung implementieren (`project.ts::fachwerte()` bzw.
    separater PDF-/Endpunkt-Extraktor).
-2. `sql/010_core_autoixpert.sql`: `core.fact_gutachten` (+ `v_versicherer_je_fall`
+2. `sql/011_core_autoixpert.sql`: `core.fact_gutachten` (+ `v_versicherer_je_fall`
    für LF2 schon jetzt; `v_bvsk_korridor`/`v_totalschaden_quote` sobald Zahlen fließen).
 3. Golden erweitern (DSGVO-redigiertes Fixture) + verifizieren.
 4. `extract:gutachten` in die `docker-compose`-Deploy-Kette (resiliente `;`-Kette),
