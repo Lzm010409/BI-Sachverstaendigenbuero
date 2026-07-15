@@ -1,31 +1,49 @@
-# Phase 1 — ETL/Migrate/Backup als EINE Coolify-Ressource.
-# PostgreSQL und Metabase existieren bereits als eigene Coolify-Ressourcen und
-# sind NICHT Teil dieser Compose. Diese Services verbinden sich mit der
-# bestehenden Postgres-Instanz über WAREHOUSE_DB_HOST (Coolify-internes Netz).
+# Phase 1/2 — ETL als EINE Coolify-Ressource.
 #
-# Wichtig in Coolify: diese Ressource an dasselbe Netzwerk wie die Postgres-
-# Instanz hängen (Coolify: "Connect to predefined network" / gemeinsames Netz),
-# damit WAREHOUSE_DB_HOST auflösbar ist. Siehe docs/RUNBOOK.md.
+# PostgreSQL und Metabase existieren bereits als eigene Coolify-Service-Ressource
+# (Environment 28). Deren gebuendeltes Postgres 16 traegt die Warehouse-DB
+# (Service-Alias `postgresql`, DB `warehouse`, Schemas raw/core/marts). Dieses
+# Compose ist NICHT Teil jenes Service, sondern haengt sich per EXTERNEM Netz
+# ${WAREHOUSE_NETWORK} (= Docker-Netz des Metabase-Service) ein, damit
+# WAREHOUSE_DB_HOST=`postgresql` aus diesen Containern aufloesbar ist.
+# Siehe docs/RUNBOOK.md.
 
 services:
-  # Einmaliger Migrations-Lauf beim Deploy. Läuft durch und beendet sich.
-  migrate:
+  # Deploy-Lauf: Migrationen -> Pipedrive-Extraktion -> Golden-Check.
+  # Laeuft bei jedem Deploy durch und beendet sich (exit 0 = Erfolg, sonst
+  # schlaegt der Deploy fehl — gewollt). Alle Schritte idempotent/inkrementell:
+  #   migrate  = ueberspringt bereits angewandte Dateien
+  #   extract  = inkrementell ueber raw._sync_state
+  #   golden   = read-only Assertion (20 bekannte Deals)
+  etl:
     build:
       context: .
       dockerfile: docker/migrate.Dockerfile
+    command:
+      - /bin/sh
+      - -c
+      - >
+        npx tsx scripts/migrate.ts &&
+        npx tsx etl/pipedrive/extract-organizations.ts &&
+        npx tsx etl/pipedrive/extract-deals.ts &&
+        npx tsx scripts/test-golden.ts
     environment:
       WAREHOUSE_DB_HOST: ${WAREHOUSE_DB_HOST}
       WAREHOUSE_DB_PORT: ${WAREHOUSE_DB_PORT:-5432}
       WAREHOUSE_DB_NAME: ${WAREHOUSE_DB_NAME:-warehouse}
       ETL_DB_USER: ${ETL_DB_USER:-etl}
       ETL_DB_PASSWORD: ${ETL_DB_PASSWORD}
+      PIPEDRIVE_API_TOKEN: ${PIPEDRIVE_API_TOKEN}
+      PIPEDRIVE_COMPANY_DOMAIN: ${PIPEDRIVE_COMPANY_DOMAIN}
+    networks:
+      - warehouse
     restart: "no"
 
-  # Backup-Runner. Nicht als Dauerdienst — via Coolify Scheduled Task nächtlich
-  # aufrufen:  docker compose run --rm backup
-  # Image-Major = Server-Major (PG_MAJOR).
+  # Backup-Runner. Nicht als Dauerdienst und NICHT beim Deploy (profile manual).
+  # Naechtlich via Coolify Scheduled Task:  docker compose run --rm backup
+  # Image-Major = Server-Major (PG_MAJOR=16 fuer die Metabase-Postgres-Instanz).
   backup:
-    image: postgres:${PG_MAJOR:-17}-alpine
+    image: postgres:${PG_MAJOR:-16}-alpine
     entrypoint: ["/bin/sh", "/app/scripts/backup.sh"]
     environment:
       WAREHOUSE_DB_HOST: ${WAREHOUSE_DB_HOST}
@@ -37,7 +55,17 @@ services:
     volumes:
       - ./scripts:/app/scripts:ro
       - backups:/backups
+    networks:
+      - warehouse
+    profiles: ["manual"]
     restart: "no"
+
+# Externes Docker-Netz des Metabase-Service (Env 28). Der Name kommt als
+# Coolify-Secret WAREHOUSE_NETWORK. Ueber dieses Netz ist `postgresql` erreichbar.
+networks:
+  warehouse:
+    external: true
+    name: ${WAREHOUSE_NETWORK}
 
 volumes:
   backups:
