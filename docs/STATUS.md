@@ -15,7 +15,8 @@ darauf auf).
 - **Phase 3** — sevDesk positionsscharf: `sql/005_raw_sevdesk.sql`,
   `sql/006_core_sevdesk.sql`, `etl/sevdesk/{client,project,extract-invoices,extract-positions}.ts`,
   Fixture + `scripts/{load,test}-sevdesk.ts`, `etl`-Deploy-Service ergänzt.
-  **Gebaut & lokal end-to-end verifiziert** (s. u.). **Noch nicht deployt.**
+  **Deployt & live verifiziert** (2026-07-15, s. u.). Zusätzlich `sql/007` +
+  `etl/sevdesk/run-log.ts`: ETL-Observability (`marts.v_etl_run`/`v_etl_status`).
 
 ## Deployment Phase 2 (erledigt & verifiziert, 2026-07-15)
 
@@ -97,13 +98,43 @@ Positionen brutto == Rechnung `sumGross` == 1480,19), DSGVO-Grants greifen
   Bewertungsabfrage, EDV, Schichtdickenmessung, Restwertermittlung).
 - Annahme prüfen: `invoiceNumber`-Präfix == Aktenzeichen (Fallback-Join).
 
+## Deployment Phase 3 (erledigt & verifiziert, 2026-07-15)
+
+Deploy-Branch der Coolify-App `bi-etl-warehouse` = **`claude/repo-deployment-setup-emf5b8`**
+(nicht der Phasen-Branch!). Phase 3 wurde per Freigabe des Inhabers dorthin
+fast-forwarded (Commits `a895b10`, `abd14fe`). Deploy via
+`GET {COOLIFY_BASE_URL}/api/v1/deploy?uuid=agsgcco44g4oko4swc0ocgc0`.
+
+- **Live-Zahlen (Metabase-API, DB-ID 2):** 994 Rechnungen, 6656 Positionen.
+  ETL-Protokoll `marts.v_etl_run`: `sevdesk_invoices` ok/994,
+  `sevdesk_invoice_positions` ok/6656.
+- **Aktenzeichen-Join 99,95 %:** nur 2 von 4279 Positionen ohne Aktenzeichen
+  (zweistufiger Fallback über `invoiceNumber`-Präfix greift).
+- **Konsistenz:** 988/994 Rechnungen rekonzilieren exakt (Σ Positionen == `sumGross`).
+  **6 Rechnungen mit Σ Positionen == exakt 2× Rechnungssumme** — Positionen sind
+  korrekt (keine Duplikate), die Rechnung ist auf ~50 % gequotelt. **Sehr wahrsch.
+  Haftungsquote/Teilregulierung — vom Inhaber zu bestätigen.** `v_rechnung_konsistenz`
+  findet solche Fälle bewusst (relevant für Phase 5).
+- **Erste Deploy-Panne (behoben):** die alte `&&`-Extraktionskette brach beim ersten
+  Deploy vor sevDesk ab (transienter Pipedrive-Schritt) → 0 Rechnungen, ohne Log-
+  Sicht. Fix: Observability (`sql/007`) + resiliente `;`-Kette (Pipedrive blockiert
+  sevDesk nicht mehr). Zweiter Deploy grün.
+
+## Offen für den Inhaber (Phase 3)
+
+- **Kategorien-Katalog** (`CASE` in `sql/006`): 265 von 6656 Positionen = `Sonstiges`.
+  Wiederkehrende neue Namen: **Systemgebühr** (+„m. Bewertung"), **Digitalisierungs-
+  pauschale**, **Sonderrecherche**, „Gestellung Werkstattausrüstung/Personal",
+  „Phantomkalkulation" (+ Tippfehler-Varianten). Ansehen: `core.dim_positionskategorie`
+  (Zeilen mit `kategorie='Sonstiges'`). Zuordnung/Bearbeitung: mit Inhaber abstimmen;
+  optional editierbare Seed-Tabelle statt `CASE`.
+- **6 gequotelte Rechnungen** (s. o.) — Interpretation bestätigen.
+- **`sumGross == deal_value`**: vom Inhaber bestätigt (gilt regulär; bei den 6
+  gequotelten Rechnungen ist der Deal-Value voraussichtlich der gequotelte Betrag).
+
 ## NÄCHSTER SCHRITT
 
-1. **Phase 3 deployen:** `SEVDESK_API_TOKEN` (+ optional `SEVDESK_API_BASE`,
-   `SEVDESK_SINCE`) als Coolify-Secret an `bi-etl-warehouse` setzen, dann Deploy
-   anstoßen (Migrationen 005/006 + sevDesk-Extraktion laufen mit). Danach live
-   verifizieren (Positionsanzahl, `v_rechnung_konsistenz.differenz`,
-   unkartierte Namen in `dim_positionskategorie` = `Sonstiges`).
-2. Offene Inhaber-Fragen (s. o.) klären, Katalog ggf. nachziehen.
-3. Danach **Phase 4 (autoiXpert)** oder **Phase 5 (Kürzungsgrund/Durchsetzungsquote)**
-   — Phase 5 hat mit Phase 3 jetzt ihr Positions-Fundament.
+- Kategorien-Katalog mit dem Inhaber finalisieren (neue Namen zuordnen; ggf. Seed-
+  Tabelle). Interpretation der 6 gequotelten Rechnungen klären.
+- Danach **Phase 4 (autoiXpert)** oder **Phase 5 (Kürzungsgrund/Durchsetzungsquote)**
+  — Phase 5 hat mit Phase 3 jetzt ihr Positions-Fundament.
