@@ -62,16 +62,28 @@ committet). **Zuerst diese Datei + `CLAUDE.md` lesen.**
 
 ## NÄCHSTE SCHRITTE (Auswahl beim Neustart)
 
-### Option A — Phase 4 (autoiXpert)  *(braucht Inhaber-Input)*
-Plan-Entwurf: **`docs/plan-phase-4.md`** (gegenlesen). Ziel: WBW, Restwert,
+### Option A — Phase 4 (autoiXpert)  *(Unterbau gebaut & verifiziert; 1 Sample fehlt)*
+Plan + Stand: **`docs/plan-phase-4.md`** (§ „Stand 2026-07-15"). Ziel: WBW, Restwert,
 Wertminderung (+ Totalschaden/130-%) → Leitfragen 8 (BVSK-Korridor) & 10
-(Totalschadenquote). Join über Pipedrive-Feld `f6970a4f`. DSGVO Option A.
-**Zum Bauen benötigt:**
-1. read-only `AUTOIXPERT_API_TOKEN` (Coolify-Secret; für Inspektion reicht curl),
-2. **1 echtes Gutachten als JSON** (PII geschwärzt) + Bestätigung API-Endpunkt/Auth
-   (`app.autoixpert.de`?),
-3. Antworten auf die 5 Fachfragen in `plan-phase-4.md` §7 (v. a. Totalschaden-
-   Definition, Doppelquelle Reparaturkosten Pipedrive vs. autoiXpert).
+(Totalschadenquote), **plus Bonus Leitfrage 2** (Versicherer je Fall aus
+`insurance.organization_name`).
+
+**Gebaut (typecheck grün, DSGVO-Filter gegen echtes Sample verifiziert, noch nicht
+in der Deploy-Kette):** `sql/009_raw_autoixpert.sql`,
+`etl/autoixpert/{client,project,extract-gutachten,run-log}.ts`, npm `extract:gutachten`.
+- API bestätigt (Live-n8n): `GET https://app.autoixpert.de/externalApi/v1/reports/{id}`,
+  **Bearer**. `token` = Aktenzeichen. `type` = Gutachtenart (liability→Haftpflicht).
+- Extraktor ist **gegated**: ohne `AUTOIXPERT_API_TOKEN` No-op.
+
+**Noch benötigt (nur noch das):**
+1. **1 FERTIGES Gutachten als JSON** (`completion_date` gesetzt) — Fachwerte fehlen
+   im aufgenommenen Zustand; nur so lassen sich die Feldnamen für WBW/Restwert/
+   Wertminderung/Reparaturkosten/Nutzungsausfall bestätigen (`project.ts::fachwerte()`
+   finalisieren). Frage: strukturierte Felder oder nur DAT-PDF?
+2. `AUTOIXPERT_API_TOKEN` als Coolify-Secret (Bearer, read-only).
+3. Fachfragen `plan-phase-4.md` §7.3–7.4 (Doppelquelle Reparaturkosten, Totalschaden-
+   Definition).
+Danach: `sql/010` (`fact_gutachten` + marts), Golden, Deploy-Kette ergänzen.
 
 ### Option B — Phase 5 (Kürzungsgrund / Durchsetzungsquote)  *(kein neuer Zugang nötig)*
 Fundament steht (Phase 3 Positionen). Durchsetzungsquote = 1 − Σ Ausbuchung / Σ
