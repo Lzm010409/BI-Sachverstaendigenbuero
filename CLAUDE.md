@@ -142,9 +142,10 @@ Siehe `docs/field-mapping.md` für die konkreten Hash-Keys und ihren Status.
 - **`deal.label_ids` mischt drei Gruppen** (Katalog: `docs/labels.md`):
   Gutachtenart (28 = Haftpflichgutachten, 36 = BEWERTUNG), Fall-Alterung
   (61/62/63), Fall-Flag (60 = OHNE RECHTSANWALT). Der ETL muss sie trennen.
-  Pipedrive kennt nur die **grobe** Art (Haftpflicht vs. Bewertung); die feine
-  Gutachtenart (Kasko, Kurzgutachten, Reparaturbestätigung …) kommt aus
-  **autoiXpert** (Phase 4), nicht aus Pipedrive.
+  Die Gutachtenart-Dimension ist mit **Haftpflicht** und **Bewertung**
+  **vollständig** — das Büro erstellt (bestätigt durch den Inhaber) nur diese
+  beiden Arten. autoiXpert liefert in Phase 4 weitere Fachdaten (WBW, Restwert,
+  Wertminderung …), aber **keine** zusätzliche Auftragsart.
 - **Organisationen sind typisiert über `org.label_ids`:** 35 = Versicherer,
   32 = Auftraggeber/Anwalt/Privat. `deal.org_id` referenziert — wenn gesetzt —
   den Versicherer, ist aber **dünn befüllt**. Das ist die zentrale offene Lücke

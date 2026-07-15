@@ -89,12 +89,11 @@ existiert **nicht** in Pipedrive-Labels → die Auftragsart-Dimension muss aus
 **autoiXpert** (Phase 4) kommen. Der ETL leitet aus `label_ids` nur die grobe
 Art {28, 36} ab.
 
-- **MENSCH (Q4):** Bestätigst du, dass die feine Gutachtenart aus autoiXpert
-  kommt? Und: welche Arten willst du als **eigene Auswertungsdimension** (das ist
-  zugleich der in Phase 4 gewünschte Katalog)? Das ist der einzige Teil von Q4,
-  den ich nicht aus den Daten holen kann.
-- Org-Labels **32/35** bestätigt (siehe `labels.md`); gibt es weitere (z. B.
-  Werkstätten)?
+- **Q4 GEKLÄRT (Inhaber):** Das Büro erstellt **nur** Haftpflicht- und
+  Bewertungsgutachten. Die Gutachtenart-Dimension {28, 36} ist damit
+  **vollständig**; keine feinere Art zu ergänzen. autoiXpert liefert weitere
+  Fachdaten, aber keine zusätzliche Auftragsart.
+- Org-Labels **32/35** bestätigt (siehe `labels.md`).
 
 ---
 
@@ -111,10 +110,9 @@ Art {28, 36} ab.
   - [ ] `215832fc…` = Nutzungsausfall-Tagessatz? (Label nicht aus Daten ableitbar)
   - [ ] Zuordnung `efd97e60…`↔Vorschaden vs `3bc5c0f3…`↔Altschaden
   - [ ] `62a4930b…` Datum, `621afa76…`/`b189ecbd…`/Org-Felder
-- [ ] **Q4 (offen):** feine Gutachtenart aus autoiXpert bestätigen + Katalog der
-      auswertungsrelevanten Arten liefern (Abschnitt 5).
-- [ ] **GitHub-Schreibrecht** für die Claude-App, damit Phase 0 gepusht werden
-      kann (git-Relay ist read-only, App-Integration ohne Schreibrecht).
+- [x] **Q4 geklärt:** nur Haftpflicht + Bewertung → Gutachtenart-Katalog
+      vollständig (Abschnitt 5).
+- [x] **GitHub-Schreibrecht** erteilt.
 
 Diese Rest-❓ blockieren Phase 1 (Infrastruktur) **nicht**. Sie müssen vor der
 `fact_ausbuchung`-Modellierung in Phase 2 geschlossen sein.

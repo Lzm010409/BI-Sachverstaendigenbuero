@@ -15,11 +15,11 @@ Der ETL muss `deal.label_ids` in drei Gruppen zerlegen:
 | 28 | Haftpflichgutachten *(sic, so in Pipedrive)* | 98 |
 | 36 | BEWERTUNG (Wertermittlung) | 2 |
 
-**Wichtig:** In Pipedrive gibt es faktisch nur diese grobe Unterscheidung
-(Haftpflicht vs. Bewertung). Die **feingliedrige Gutachtenart** (Kasko,
-Kurzgutachten, Reparaturbestätigung, Beweissicherung, Leasingrückläufer …) ist
-in Pipedrive-Labels **nicht** abgebildet → muss aus **autoiXpert** (Phase 4)
-kommen. Das ist eine offene MENSCH-Frage (siehe field-mapping-findings.md).
+**Bestätigt durch den Inhaber:** Das Büro erstellt **nur** Haftpflicht- und
+Bewertungsgutachten. Damit ist die Gutachtenart-Dimension mit {28, 36}
+**vollständig** — es gibt keine feinere Art zu ergänzen. autoiXpert (Phase 4)
+liefert weitere Fachdaten (WBW, Restwert, Wertminderung …), aber keine
+zusätzliche Auftragsart.
 
 ### b) Fall-Alterung (auto-gesetzt, NICHT Gutachtenart)
 
