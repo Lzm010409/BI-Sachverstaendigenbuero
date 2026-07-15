@@ -120,20 +120,33 @@ fast-forwarded (Commits `a895b10`, `abd14fe`). Deploy via
   Sicht. Fix: Observability (`sql/007`) + resiliente `;`-Kette (Pipedrive blockiert
   sevDesk nicht mehr). Zweiter Deploy grün.
 
-## Offen für den Inhaber (Phase 3)
+## Kategorien-Katalog — editierbare Seed-Tabelle (erledigt, 2026-07-15)
 
-- **Kategorien-Katalog** (`CASE` in `sql/006`): 265 von 6656 Positionen = `Sonstiges`.
-  Wiederkehrende neue Namen: **Systemgebühr** (+„m. Bewertung"), **Digitalisierungs-
-  pauschale**, **Sonderrecherche**, „Gestellung Werkstattausrüstung/Personal",
-  „Phantomkalkulation" (+ Tippfehler-Varianten). Ansehen: `core.dim_positionskategorie`
-  (Zeilen mit `kategorie='Sonstiges'`). Zuordnung/Bearbeitung: mit Inhaber abstimmen;
-  optional editierbare Seed-Tabelle statt `CASE`.
+`CASE`-Block abgelöst durch `core.dim_positionskategorie_regel` (Migration `sql/008`),
+gespeist aus **`fixtures/positionskategorie.json`** via `etl/sevdesk/load-kategorien.ts`
+(voller Sync je Deploy). **Pflege: JSON editieren → redeploy.** `fact_rechnungsposition`
+matcht regelbasiert (first match nach `prioritaet`, ILIKE gegen Positions-/Part-Name),
+Fallback `Sonstiges`. Live: 16 Regeln, **`Sonstiges` von 265 → 28** gefallen
+(Systemgebühr 126, Digitalisierungspauschale 109, Sonderrecherche u. a. zugeordnet).
+Rest = seltene Einzelfälle (Gestellung Werkstattausrüstung, Phantomkalkulation, „m.
+Bewertung", Tippfehler) — bei Bedarf Regel in der JSON ergänzen.
+Stolperstein behoben: `fixtures/` wurde nicht ins ETL-Image kopiert (`docker/migrate.Dockerfile`
+`COPY fixtures`), sonst blieb die Regeltabelle leer (alles `Sonstiges`).
 - **`sumGross == deal_value`**: vom Inhaber bestätigt (gilt regulär). Die 6
   Ausreißer sind Rabatt-Sonderrechnungen und werden nicht weiterverfolgt.
 
-## NÄCHSTER SCHRITT
+## NÄCHSTER SCHRITT — Phase 4 (autoiXpert)
 
-- Kategorien-Katalog mit dem Inhaber finalisieren (neue Namen zuordnen; ggf. Seed-
-  Tabelle) — offen, auf Zuruf. (Die 6 Rabatt-Sonderrechnungen sind erledigt: ignorieren.)
-- Danach **Phase 4 (autoiXpert)** oder **Phase 5 (Kürzungsgrund/Durchsetzungsquote)**
-  — Phase 5 hat mit Phase 3 jetzt ihr Positions-Fundament.
+Plan-Entwurf liegt in **`docs/plan-phase-4.md`** (zum Gegenlesen). Ziel: Fachdaten
+**WBW, Restwert, Wertminderung** (+ Totalschaden/130-%-Einordnung) für Leitfragen 8
+(BVSK-Korridor) und 10 (Totalschadenquote). Join über Pipedrive-Feld `f6970a4f`
+(autoiXpert-Gutachten-ID). DSGVO Option A (kein VIN/Kennzeichen/Klarname/Freitext).
+
+**BLOCKER (wie Phase 3):** Egress zu autoiXpert ist aus der Web-Session geblockt →
+für den korrekten/DSGVO-sicheren Bau ein **echtes Gutachten inspizieren**. Dafür
+Inhaber: read-only `AUTOIXPERT_API_TOKEN` bereitstellen **und** 1 Beispiel-Gutachten
+als JSON (PII geschwärzt) liefern — plus Bestätigung des API-Endpunkts
+(`app.autoixpert.de`, Auth-Schema). Offene Fachfragen: s. `plan-phase-4.md` §7.
+
+Alternativ: **Phase 5 (Kürzungsgrund/Durchsetzungsquote)** — hat mit Phase 3 jetzt
+sein Positions-Fundament und braucht keinen neuen Datenzugang.
