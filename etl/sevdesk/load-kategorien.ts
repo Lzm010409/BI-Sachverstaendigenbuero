@@ -10,6 +10,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { makePool } from "../db.js";
+import { logRun } from "./run-log.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FILE = resolve(__dirname, "..", "..", "fixtures", "positionskategorie.json");
@@ -33,9 +34,11 @@ async function main(): Promise<void> {
       );
     }
     await pool.query("COMMIT");
+    await logRun(pool, "kategorien_regeln", "ok", regeln.length, null);
     console.log(`Kategorien-Regeln geladen: ${regeln.length}`);
   } catch (err) {
     await pool.query("ROLLBACK").catch(() => {});
+    await logRun(pool, "kategorien_regeln", "error", null, err instanceof Error ? err.message : String(err));
     throw err;
   } finally {
     await pool.end();
