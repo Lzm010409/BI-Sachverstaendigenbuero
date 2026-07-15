@@ -14,6 +14,7 @@
 import { makePool } from "../db.js";
 import { paginate } from "./client.js";
 import { projectInvoice } from "./project.js";
+import { logRun } from "./run-log.js";
 
 const SOURCE = "sevdesk_invoices";
 
@@ -60,7 +61,11 @@ async function main(): Promise<void> {
       [SOURCE, maxUpdate],
     );
 
+    await logRun(pool, SOURCE, "ok", count, null);
     console.log(`Fertig: ${count} Rechnungen aktualisiert.`);
+  } catch (err) {
+    await logRun(pool, SOURCE, "error", null, err instanceof Error ? err.message : String(err));
+    throw err;
   } finally {
     await pool.end();
   }

@@ -13,6 +13,7 @@
 import { makePool } from "../db.js";
 import { paginate } from "./client.js";
 import { projectPosition } from "./project.js";
+import { logRun } from "./run-log.js";
 
 interface Position {
   id: number | string;
@@ -48,7 +49,11 @@ async function main(): Promise<void> {
       total += count;
     }
 
+    await logRun(pool, "sevdesk_invoice_positions", "ok", total, null);
     console.log(`Fertig: ${total} Positionen aktualisiert.`);
+  } catch (err) {
+    await logRun(pool, "sevdesk_invoice_positions", "error", null, err instanceof Error ? err.message : String(err));
+    throw err;
   } finally {
     await pool.end();
   }
