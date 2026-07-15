@@ -1,11 +1,12 @@
 # Phase 1/2 — ETL/Migrate/Backup als EINE Coolify-Ressource.
 # PostgreSQL und Metabase existieren bereits als eigene Coolify-Ressourcen und
 # sind NICHT Teil dieser Compose. Diese Services verbinden sich mit der
-# bestehenden Postgres-Instanz über WAREHOUSE_DB_HOST (Coolify-internes Netz).
+# bestehenden Postgres-Instanz über WAREHOUSE_DB_HOST.
 #
-# Wichtig in Coolify: diese Ressource an dasselbe Netzwerk wie die Postgres-
-# Instanz hängen (Coolify: "Connect to predefined network" / gemeinsames Netz),
-# damit WAREHOUSE_DB_HOST auflösbar ist. Siehe docs/RUNBOOK.md.
+# Netz: Die Postgres-Instanz läuft im Coolify-Service-Netz, dessen Name in
+# WAREHOUSE_NETWORK gesetzt wird (extern, muss bereits existieren). Alle Services
+# hier hängen sich an dieses Netz, damit WAREHOUSE_DB_HOST (der Postgres-
+# Containername) auflösbar ist. Siehe docs/RUNBOOK.md.
 
 services:
   # Standard-Deploy-Lauf (Coolify `up`): Migrationen -> Extraktion -> Golden.
@@ -40,6 +41,8 @@ services:
         echo "== Golden-Test =="
         npx tsx scripts/test-golden.ts
     restart: "no"
+    networks:
+      - warehouse
 
   # --- Manuelle Tools (nicht beim Deploy gestartet; via `docker compose run`) ---
 
@@ -56,6 +59,8 @@ services:
       ETL_DB_USER: ${ETL_DB_USER:-etl}
       ETL_DB_PASSWORD: ${ETL_DB_PASSWORD}
     restart: "no"
+    networks:
+      - warehouse
 
   # Backup-Runner. Nicht als Dauerdienst — via Coolify Scheduled Task nächtlich
   # aufrufen:  docker compose run --rm backup
@@ -75,6 +80,15 @@ services:
       - ./scripts:/app/scripts:ro
       - backups:/backups
     restart: "no"
+    networks:
+      - warehouse
 
 volumes:
   backups:
+
+# Bestehendes Coolify-Service-Netz der Postgres-Instanz (extern). Der konkrete
+# Name kommt aus WAREHOUSE_NETWORK (z. B. der Netz-Name des metabase-Service).
+networks:
+  warehouse:
+    name: ${WAREHOUSE_NETWORK}
+    external: true
