@@ -1,8 +1,21 @@
 # Plan — Phase 1: Infrastruktur
 
-**Status:** ENTWURF zum Gegenlesen. Kein Code, bis der Plan abgenommen ist.
+**Status:** ABGENOMMEN (mit Revision, siehe unten). Bau läuft.
 **Ziel (aus Auftrag):** PostgreSQL und Metabase laufen auf Coolify, Migrationen
 sind automatisiert, Backup läuft und ist einmal getestet.
+
+## Revision nach Abstimmung (2026-07)
+
+- Metabase existiert bereits als Coolify-Container unter
+  **metabase.gollenstede.app**, inkl. eigener PostgreSQL-App-DB.
+- **Eine** Postgres-*Instanz* (die bestehende) wird genutzt — **kein** zweiter
+  Container. Das Warehouse liegt darin als **eigene Datenbank `warehouse`**
+  (getrennt von Metabases App-DB), damit Metabase-Metadaten und Fachdaten nicht
+  vermischen und `metabase_ro` niemals `raw` sehen kann (Auftragsregel).
+- Ich deploye nur noch eine **ETL/Migrate/Backup-Ressource**, die sich mit der
+  bestehenden Instanz verbindet. `pg-warehouse`/`pg-metabase`/`metabase` als
+  eigene Compose-Services entfallen.
+- Offene Entscheidungen 8.1–8.5: erledigt bzw. an meine Empfehlung delegiert.
 
 > Dieser Plan ist der Arbeitsgegenstand der Phase. Bitte besonders die
 > **offenen Entscheidungen** (Abschnitt 8) prüfen — davon hängt der Bau ab.
@@ -34,20 +47,26 @@ Trennung ausdrücklich („nicht die Warehouse-DB").
 
 ---
 
-## 2. Komponenten (docker-compose Services)
+## 2. Komponenten
 
-| Service | Image (gepinnt) | Zweck | Öffentlich? |
-|---|---|---|---|
-| `pg-warehouse` | `postgres:17` | Warehouse-DB (raw/core/marts) | nein (intern) |
-| `pg-metabase` | `postgres:17` | Metabase-App-DB | nein (intern) |
-| `metabase` | `metabase/metabase:v0.50.x` | BI-Layer | **ja** (Subdomain+TLS) |
-| `migrate` | eigenes Node-Image | einmaliger Migrations-Lauf beim Deploy | nein |
-| `backup` | `postgres:17` + Cron | nächtlicher `pg_dump` | nein |
+**Bestehend (Coolify, nicht Teil meiner Compose):**
 
-- Alle Images auf **feste Tags** pinnen (kein `latest`) — reproduzierbare Deploys.
-- `depends_on` mit Healthchecks: `migrate` und `metabase` warten auf
-  `service_healthy` der jeweiligen DB (`pg_isready`).
-- Persistente Named Volumes: `pgdata_warehouse`, `pgdata_metabase`, `backups`.
+| Ressource | Zweck | Öffentlich? |
+|---|---|---|
+| PostgreSQL-Instanz | enthält Metabase-App-DB **und** (neu) DB `warehouse` | nein (intern) |
+| Metabase | BI-Layer, metabase.gollenstede.app | **ja** (TLS) |
+
+**Neu von mir (eine Coolify-Ressource aus `docker-compose.yml`):**
+
+| Service | Image (gepinnt) | Zweck |
+|---|---|---|
+| `migrate` | eigenes Node-Image | einmaliger Migrations-Lauf beim Deploy, exit 0 |
+| `backup` | `postgres:<major>` | `pg_dump` der `warehouse`-DB (Coolify Scheduled Task, nächtlich) |
+
+- Feste Image-Tags (kein `latest`).
+- `migrate`/`backup` verbinden sich mit der bestehenden Instanz über
+  `WAREHOUSE_DB_HOST` (Coolify-internes Netz). DB-Ports bleiben intern.
+- Volume `backups` für die Dumps.
 
 ---
 
@@ -148,25 +167,27 @@ Keine Fachdaten, keine Extraktoren — die kommen in Phase 2.
 
 ---
 
-## 8. Offene Entscheidungen (brauche ich von dir, bevor ich baue)
+## 8. Entscheidungen — Stand
 
-**8.1 PostgreSQL-Major-Version.** Empfehlung **17** (langjährig erprobt, für ein
-Warehouse wichtiger als Neuheit). 18 wäre möglich. → 17 ok?
+**8.1 PostgreSQL-Major-Version.** = Major der bestehenden Instanz (vom Inhaber
+zu nennen). Das `pg_dump`-Backup-Image wird auf denselben Major gepinnt.
 
-**8.2 Metabase-App-DB: eigene Instanz oder eigene DB?** Empfehlung: **eigener
-`pg-metabase`-Container** (volle Isolation, getrennte Backups, marginaler
-Mehrverbrauch). Alternative: nur eine eigene *Datenbank* in derselben Instanz
-(spart einen Container, koppelt aber Verfügbarkeit/Backup). → Container ok?
+**8.2 Metabase-App-DB vs. Warehouse.** ENTSCHIEDEN: eine Instanz, Warehouse als
+**eigene Datenbank `warehouse`** darin. Kein zweiter Container.
 
-**8.3 Backup-Ziel.** Nur lokales Coolify-Volume, oder zusätzlich **offsite**
-(z. B. verschlüsselt auf S3-kompatiblen DE-Speicher)? Lokales Volume allein
-schützt nicht gegen Serververlust. → Wie hättest du es gern?
+**8.3 Backup-Ziel.** Vorerst lokales Coolify-Volume + Retention 14 Tage. Offsite
+optional später (Empfehlung: verschlüsselt, DE-Region) — nicht blockierend.
 
-**8.4 Migrations-Nummerierung** (Abschnitt 4): `001_init.sql` separat (mein
-Vorschlag) oder Grants in den DB-Init ziehen, um `001_raw.sql` freizuhalten?
+**8.4 Migrations-Nummerierung.** `001_init.sql` (Schemas/Grants), danach
+Phase 2 `002_raw.sql` / `003_core.sql`.
 
-**8.5 Subdomain** für Metabase (z. B. `bi.gollenstede.app`?) und Bestätigung,
-dass die DB-Ports **nicht** nach außen exponiert werden.
+**8.5 Subdomain.** metabase.gollenstede.app (bereits eingerichtet). DB-Ports
+werden **nicht** öffentlich exponiert (nur internes Docker-Netz).
+
+## Von dir noch benötigt (2 Werte)
+
+- Interner **Postgres-Hostname** in Coolify (Service-DNS, den Container erreichen).
+- **Postgres-Major-Version** der bestehenden Instanz.
 
 ## 9. 🧑 MENSCH-Aufgaben dieser Phase (aus Auftrag)
 

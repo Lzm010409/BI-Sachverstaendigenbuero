@@ -1,0 +1,43 @@
+# Phase 1 — ETL/Migrate/Backup als EINE Coolify-Ressource.
+# PostgreSQL und Metabase existieren bereits als eigene Coolify-Ressourcen und
+# sind NICHT Teil dieser Compose. Diese Services verbinden sich mit der
+# bestehenden Postgres-Instanz über WAREHOUSE_DB_HOST (Coolify-internes Netz).
+#
+# Wichtig in Coolify: diese Ressource an dasselbe Netzwerk wie die Postgres-
+# Instanz hängen (Coolify: "Connect to predefined network" / gemeinsames Netz),
+# damit WAREHOUSE_DB_HOST auflösbar ist. Siehe docs/RUNBOOK.md.
+
+services:
+  # Einmaliger Migrations-Lauf beim Deploy. Läuft durch und beendet sich.
+  migrate:
+    build:
+      context: .
+      dockerfile: docker/migrate.Dockerfile
+    environment:
+      WAREHOUSE_DB_HOST: ${WAREHOUSE_DB_HOST}
+      WAREHOUSE_DB_PORT: ${WAREHOUSE_DB_PORT:-5432}
+      WAREHOUSE_DB_NAME: ${WAREHOUSE_DB_NAME:-warehouse}
+      ETL_DB_USER: ${ETL_DB_USER:-etl}
+      ETL_DB_PASSWORD: ${ETL_DB_PASSWORD}
+    restart: "no"
+
+  # Backup-Runner. Nicht als Dauerdienst — via Coolify Scheduled Task nächtlich
+  # aufrufen:  docker compose run --rm backup
+  # Image-Major = Server-Major (PG_MAJOR).
+  backup:
+    image: postgres:${PG_MAJOR:-17}-alpine
+    entrypoint: ["/bin/sh", "/app/scripts/backup.sh"]
+    environment:
+      WAREHOUSE_DB_HOST: ${WAREHOUSE_DB_HOST}
+      WAREHOUSE_DB_PORT: ${WAREHOUSE_DB_PORT:-5432}
+      WAREHOUSE_DB_NAME: ${WAREHOUSE_DB_NAME:-warehouse}
+      ETL_DB_USER: ${ETL_DB_USER:-etl}
+      ETL_DB_PASSWORD: ${ETL_DB_PASSWORD}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
+    volumes:
+      - ./scripts:/app/scripts:ro
+      - backups:/backups
+    restart: "no"
+
+volumes:
+  backups:
