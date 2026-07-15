@@ -25,27 +25,41 @@ Gedächtnis):**
 - npm-Script `extract:gutachten`. **Noch NICHT** in der Deploy-Kette (docker-compose)
   verdrahtet — erst nach Fachwert-Verifikation + Gegenlesen.
 
-**Zwei zentrale Befunde aus dem echten Sample (report `807KwgxI7Xez`, state=recorded):**
-1. **Fachwerte fehlen im aufgenommenen Zustand.** WBW/Restwert/Wertminderung/
-   Reparaturkosten/Nutzungsausfall sind bei `state=recorded`, `completion_date=null`
-   NICHT im Report enthalten — sie entstehen erst im fertigen Gutachten bzw. in der
-   DAT-Kalkulation (separates Dokument). **→ Es fehlt noch genau eine Sache: ein
-   FERTIGES Gutachten (completion_date gesetzt) als JSON, um die Fachwert-Feldnamen
-   zu bestätigen.** Bis dahin liest `project.ts::fachwerte()` defensiv über plausible
-   Kandidaten-Pfade (numerisch gecoerct) und markiert `_fachwerte_verifiziert:false`.
-2. **Bonus für Leitfrage 2:** `insurance.organization_name` (z. B. „WGV-Versicherung
-   AG") liegt sauber vor — genau die in Pipedrive nur dünn befüllte Versicherer-
-   Zuordnung. autoiXpert kann diese Lücke schließen. Ebenso `intermediary.
-   organization_name` (Auftragsquelle, z. B. „INTERNET" → Leitfrage 4) und
-   `type` (liability → Haftpflicht; bestätigt Q5). `token` **ist** das Aktenzeichen
-   (MMJJ/NummerTG) → Join + Kreuzvalidierung gegen den Deal.
+**Verifiziert an zwei echten Samples** (`807KwgxI7Xez` state=recorded;
+`PGCYRWGAx0XX` state=**done**, completion_date gesetzt):
 
-**DSGVO-Hinweis (zur Kenntnis):** `lawyer`/`garage`/`insurance` werden auf
-`organization_name` + pseudonyme `contact_id` reduziert. Bei Einzelanwälten/-werk-
-stätten kann `organization_name` einen Personennamen tragen (z. B. „Rechtsanwältin
-Claudia Busch"). Nach CLAUDE.md sind Anwaltskanzleien/Werkstätten juristische
-Personen und im Klartext erlaubt; der geschützte Geschädigte (`claimant`) wird
-vollständig verworfen.
+1. **Die numerischen Fachwerte stehen NICHT in der externalApi — auch nicht im
+   fertigen Gutachten.** Vom Inhaber bestätigt: WBW, Restwert, Wertminderung und
+   Reparaturkosten existieren **nur in den generierten PDFs**. Das Report-Objekt
+   trägt sie in keinem Zustand. `project.ts::fachwerte()` liefert sie daher bewusst
+   als `null` mit `_quelle_pdf_only:true`. **→ Wie die Zahlen ins Warehouse kommen,
+   ist eine offene Architekturfrage (s. §7): PDF-Parsing vs. Pipedrive-
+   Reparaturkosten vs. evtl. separater Valuation-Endpunkt.**
+2. **Dokument-Präsenz als Fachsignal** (DSGVO-sicher, nur `type`, keine URLs/Titel):
+   `documents[]` verrät strukturiert, welche Kalkulationen existieren —
+   `dat_market_analysis` (WBW), `custom_residual_value_bid_list` (Restwert),
+   `diminished_value_protocol` (Wertminderung), `dat_damage_calculation`
+   (Reparatur). `project.ts::dokumente()` führt Bool-Flags. Signal für Leitfrage 10
+   (Bewertung/Restwert erstellt = Totalschaden-Indiz), auch ohne die Zahl selbst.
+3. **Bonus Leitfrage 2:** `insurance.organization_name` (z. B. „WGV-Versicherung AG",
+   „HUK-COBURG …") liegt sauber vor — schließt die in Pipedrive nur dünn befüllte
+   Versicherer-Lücke. `type` (liability → Haftpflicht; bestätigt Q5). `token` **ist**
+   das Aktenzeichen → Join + Kreuzvalidierung.
+
+**DSGVO-Entscheidungen (in project.ts umgesetzt, gegen beide Samples verifiziert —
+kein Leak):**
+- `insurance`/`lawyer`/`garage` → `organization_name` + pseudonyme `contact_id`.
+  Einzelanwalt/-werkstatt kann Personennamen tragen (z. B. „Rechtsanwalt Philipp
+  Nadler"); nach CLAUDE.md sind Anwaltskanzleien/Werkstätten juristische Personen,
+  Klartext erlaubt.
+- **`intermediary` (Vermittler/Auftragsquelle) → NUR `contact_id`, KEIN Klartext-
+  Name.** Grund: nicht von der Klartext-Erlaubnis gedeckt und demonstrativ eine
+  natürliche Person (in einem echten Sample trug `organization_name` einen
+  Personennamen statt einer Firma). Pseudonym erlaubt Gruppierung je Quelle
+  (Leitfrage 4) ohne Personenbezug. **Offene Frage:** Braucht LF4 doch den
+  Klarnamen der Quelle?
+- Geschädigter (`claimant`), VIN, alle Kennzeichen, Freitexte, Anschriften, Foto-
+  Beschreibungen, Session-URLs → vollständig verworfen.
 
 ---
 
@@ -155,38 +169,51 @@ Migration `sql/010_core_autoixpert.sql`.
 ## 7. Offene Fragen an den Inhaber
 
 **Erledigt (2026-07-15):**
-- ~~Q2 API-Details~~ — Endpunkt `GET /externalApi/v1/reports/{id}`, **Bearer**,
-  keine Pagination (Einzelabruf je ID). Aus Live-n8n + echtem Sample bestätigt.
-- ~~Q5 Gutachtenart~~ — `type` spiegelt die bestehende Dimension (Sample:
-  `liability` = Haftpflicht; `valuation` = Bewertung erwartet). Keine neue Art.
+- ~~Q2 API-Details~~ — `GET /externalApi/v1/reports/{id}`, **Bearer**, kein Paging.
+- ~~Q5 Gutachtenart~~ — `type` spiegelt die Dimension (liability = Haftpflicht).
+- ~~Fertiges Gutachten~~ — geliefert (`PGCYRWGAx0XX`). Ergebnis: **Fachwerte sind
+  nicht in der API, nur im PDF.** `AUTOIXPERT_API_TOKEN` ist gesetzt.
 
-**Noch offen — genau das blockiert den Fachwert-Teil (Leitfragen 8 & 10):**
-1. **Ein FERTIGES Gutachten als JSON** (`completion_date` gesetzt, PII wie gehabt
-   unkritisch — die Whitelist filtert ohnehin). Nur so lassen sich die Feldnamen
-   für **WBW, Restwert, Wertminderung, Reparaturkosten (netto/brutto),
-   Nutzungsausfall-Tagessatz** bestätigen — im aufgenommenen Zustand fehlen sie.
-   Frage dazu: Stehen diese Werte als **strukturierte Felder** im Report, oder nur
-   im DAT-Kalkulations-**Dokument** (PDF)?
-2. **`AUTOIXPERT_API_TOKEN`** als Coolify-Secret an der ETL-Ressource (read-only,
-   Bearer). Erst dann läuft der (bereits gebaute, gegatete) Extraktor produktiv.
-3. **Doppelquelle Reparaturkosten:** stehen in Pipedrive **und** autoiXpert —
-   welche ist maßgeblich? (Vorschlag: autoiXpert als Fachquelle, Pipedrive als
-   Fallback.)
-4. **Totalschaden/130 %:** Definition bestätigen (brutto oder netto Reparaturkosten
-   gegen WBW? Restwert-Berücksichtigung?).
+**Die zentrale offene ARCHITEKTURFRAGE (blockiert Leitfragen 8 & 10):**
+Woher kommen **WBW, Restwert, Wertminderung** (numerisch)? Sie stehen nur im PDF.
+Optionen:
+- **(A) Vorerst ohne die Zahlen bauen:** Metadaten + Versicherer (LF2) + Dokument-
+  Signal (welche Kalkulation existiert) jetzt liefern; numerische Fachwerte später.
+  Schnell, DSGVO-sicher, aber LF8/LF10 bleiben unvollständig.
+- **(B) PDF-Parsing** der DAT-Dokumente (`dat_market_analysis` → WBW,
+  `dat_damage_calculation` → Reparatur, …). Mächtig, aber aufwändig/brüchig; braucht
+  Regeln je DAT-Layout. Läuft nur im Container (PDF-Download via externalApi).
+- **(C) Separater Valuation-Endpunkt?** Ggf. bietet die externalApi eine
+  Bewertungs-/Kalkulations-Ressource jenseits von `/reports/{id}`. **Aus der Session
+  nicht prüfbar (Egress geblockt, auch Doku).** Bitte in der autoiXpert-Doku
+  (`dev.autoixpert.de`) prüfen: gibt es z. B. `…/reports/{id}/valuation` o. Ä.?
+- **(D) Aus Pipedrive:** Reparaturkosten liegen dort strukturiert vor (`REPARATUR-
+  KOSTEN_BRUTTO/_NETTO`). WBW/Restwert/Wertminderung dort NICHT — es sei denn, sie
+  werden künftig erfasst.
+
+**Weitere offene Fragen:**
+1. **Reparaturkosten-Quelle:** Da autoiXpert die Zahl nicht per API liefert, ist
+   Pipedrive `REPARATURKOSTEN_BRUTTO` die einzige strukturierte Quelle. Ist dieses
+   Feld für (nahezu) alle Gutachten zuverlässig gefüllt, und ist **brutto** die
+   maßgebliche Größe für die BVSK-Schadenhöhe (LF8)?
+2. **Totalschaden/130 %:** Definition bestätigen (brutto/netto Reparaturkosten gegen
+   WBW? Restwert-Berücksichtigung?) — relevant, sobald WBW verfügbar ist.
+3. **Vermittler (LF4):** Reicht die pseudonyme `contact_id` je Auftragsquelle, oder
+   wird der Klarname der Quelle gebraucht (dann DSGVO-Abwägung nötig)?
 
 ---
 
 ## 8. Reihenfolge / Checkliste
 
-- [x] autoiXpert-API-Endpunkt + Auth verifiziert (Live-n8n; Struktur gegen echtes Sample)
+- [x] autoiXpert-API-Endpunkt + Auth verifiziert (Live-n8n; gegen 2 echte Samples)
 - [x] `sql/009_raw_autoixpert.sql` (raw-Tabelle)
-- [x] `etl/autoixpert/{client,project,extract-gutachten,run-log}.ts` (DSGVO-Filter Option A, verifiziert)
-- [ ] **FERTIGES Gutachten (completion_date gesetzt) als JSON** → Fachwert-Feldnamen
-      bestätigen, `project.ts::fachwerte()` finalisieren, `_fachwerte_verifiziert:true`
-- [ ] `AUTOIXPERT_API_TOKEN` als Coolify-Secret an der ETL-Ressource (Bearer)
-- [ ] `sql/010_core_autoixpert.sql` (`core.fact_gutachten` + marts `v_bvsk_korridor`,
-      `v_totalschaden_quote`; zusätzlich Versicherer je Fall → Leitfrage 2)
+- [x] `etl/autoixpert/{client,project,extract-gutachten,run-log}.ts` — DSGVO-Filter
+      Option A, gegen recorded- UND done-Sample verifiziert (kein Leak)
+- [x] Befund: numerische Fachwerte nur im PDF (nicht in der API); Dokument-Signal
+      + Versicherer (LF2) strukturiert verfügbar
+- [x] `AUTOIXPERT_API_TOKEN` gesetzt (Coolify-Secret, Bearer)
+- [ ] **ENTSCHEIDUNG Fachwert-Quelle** (§7 A–D) — Voraussetzung für LF8/LF10
+- [ ] `extract:gutachten` in die Deploy-Kette (docker-compose) — erst nach Gegenlesen
+- [ ] `sql/010_core_autoixpert.sql` (`core.fact_gutachten` + `v_versicherer_je_fall`
+      für LF2; `v_bvsk_korridor`/`v_totalschaden_quote` sobald Fachwerte fließen)
 - [ ] Golden erweitern (DSGVO-redigiertes Fixture) + verifizieren
-- [ ] `etl`-Deploy-Service um `extract:gutachten` ergänzen (resiliente `;`-Kette),
-      erst nach Fachwert-Verifikation + Gegenlesen

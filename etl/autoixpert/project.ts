@@ -54,36 +54,68 @@ function org(o: unknown): Json | null {
 }
 
 /**
- * Fachwerte aus dem Report ziehen. ACHTUNG: Im gelieferten Sample (state=recorded,
- * completion_date=null) sind WBW/Restwert/Wertminderung/Reparaturkosten NICHT
- * enthalten — sie entstehen erst im fertigen Gutachten (bzw. in der
- * DAT-Schadenskalkulation, die als separates Dokument geführt wird). Die konkreten
- * Feldnamen/Verschachtelung sind daher NOCH UNBESTÄTIGT und müssen gegen ein
- * FERTIGES Gutachten (completion_date gesetzt) verifiziert werden, bevor diese
- * Projektion produktiv Fachwerte liefert. Bis dahin: defensive Lese-Versuche über
- * plausible Kandidaten-Pfade, numerisch gecoerct (nicht-numerisches -> null), damit
- * kein Freitext/Personenbezug versehentlich durchrutscht. Alle Treffer sind bis zur
- * Verifikation als „best effort" zu behandeln.
+ * Vermittler/Auftragsquelle → NUR pseudonyme contact_id, KEIN Klartext-Name.
+ * Grund: der Vermittler ist NICHT von der CLAUDE.md-Klartext-Erlaubnis für
+ * juristische Personen (Versicherer/Werkstatt/Anwalt) gedeckt und kann eine
+ * natürliche Person sein (in einem echten Sample trug organization_name einen
+ * Personennamen statt einer Firma).
+ * Die contact_id ist ein stabiler Pseudonym-Schlüssel → Gruppierung je Quelle für
+ * Leitfrage 4 bleibt möglich, ohne Personenbezug. (Ob Vermittler-Namen für LF4
+ * doch gebraucht werden, ist eine offene Frage an den Inhaber — s. plan-phase-4 §7.)
  */
-function fachwerte(report: Json): Json {
-  const valuation = (report.valuation ?? {}) as Json;
-  const calc = (report.damage_calculation ?? report.damageCalculation ?? {}) as Json;
+function intermediaryRef(o: unknown): Json | null {
+  if (!o || typeof o !== "object") return null;
+  const cid = str((o as Json).contact_id);
+  return cid == null ? null : { contact_id: cid };
+}
+
+// Kalkulations-Dokumente, deren bloße EXISTENZ ein Fachsignal ist (Bewertung/
+// Restwert/Minderwert/Reparatur erstellt) — auch wenn die Zahl nur im PDF steht.
+const DOK_SIGNALE: Record<string, string> = {
+  dat_damage_calculation: "hat_dat_kalkulation",       // Reparaturkosten
+  dat_market_analysis: "hat_dat_marktanalyse",         // WBW/Marktwert
+  diminished_value_protocol: "hat_minderwertprotokoll", // Wertminderung
+  custom_residual_value_bid_list: "hat_restwertgebote", // Restwert
+};
+
+/**
+ * Dokument-PRÄSENZ als DSGVO-sicheres Signal. NUR die `type`-Werte werden gelesen
+ * (keine download_url, keine title — Titel können Dateinamen/Datum enthalten). Gibt
+ * die Menge vorhandener Typen + Bool-Flags für die kalkulationsrelevanten zurück.
+ */
+function dokumente(report: Json): Json {
+  const docs = Array.isArray(report.documents) ? (report.documents as Json[]) : [];
+  const typen = new Set<string>();
+  for (const d of docs) {
+    const t = str(d?.type);
+    if (t) typen.add(t);
+  }
+  const flags: Json = {};
+  for (const [t, flag] of Object.entries(DOK_SIGNALE)) flags[flag] = typen.has(t);
+  return { typen: [...typen].sort(), ...flags };
+}
+
+/**
+ * Fachwerte. BESTÄTIGT vom Inhaber (2026-07-15) an einem FERTIGEN Gutachten
+ * (state=done, completion_date gesetzt): WBW, Restwert, Wertminderung und
+ * Reparaturkosten stehen NICHT als strukturierte Felder in der externalApi —
+ * sie existieren ausschließlich in den generierten PDFs (dat_market_analysis,
+ * custom_residual_value_bid_list, diminished_value_protocol, dat_damage_calculation).
+ * Diese Projektion liefert die Zahlen daher bewusst als null; ob/woher sie kommen,
+ * ist eine offene Architekturfrage (PDF-Parsing vs. Pipedrive-Reparaturkosten vs.
+ * evtl. separater Valuation-Endpunkt — s. plan-phase-4 §7). `_quelle_pdf_only`
+ * dokumentiert den Befund direkt am Datum. Die EXISTENZ der Kalkulationen wird über
+ * dokumente() als Signal geführt.
+ */
+function fachwerte(): Json {
   return {
-    // TODO(Phase 4): Feldnamen gegen ein FERTIGES Gutachten bestätigen.
-    wiederbeschaffungswert:
-      num(report.replacement_value) ?? num(valuation.replacement_value) ?? num(valuation.market_value),
-    restwert:
-      num(report.residual_value) ?? num(valuation.residual_value),
-    wertminderung:
-      num(report.decrease_in_value) ?? num(valuation.decrease_in_value),
-    reparaturkosten_netto:
-      num(calc.repair_costs_net) ?? num(report.repair_costs_net),
-    reparaturkosten_brutto:
-      num(calc.repair_costs_gross) ?? num(report.repair_costs_gross),
-    nutzungsausfall_tagessatz:
-      num(report.loss_of_use_per_day) ?? num(valuation.loss_of_use_per_day),
-    // Herkunft der Werte transparent halten, solange unbestätigt:
-    _fachwerte_verifiziert: false,
+    wiederbeschaffungswert: null,
+    restwert: null,
+    wertminderung: null,
+    reparaturkosten_netto: null,
+    reparaturkosten_brutto: null,
+    nutzungsausfall_tagessatz: null,
+    _quelle_pdf_only: true,
   };
 }
 
@@ -116,7 +148,8 @@ export function projectGutachten(report: Json): Json {
     insurance: org(report.insurance),
     lawyer: org(report.lawyer),
     garage: org(report.garage),
-    intermediary: org(report.intermediary),
+    // Vermittler NUR pseudonym (kann natürliche Person sein) — s. intermediaryRef().
+    intermediary: intermediaryRef(report.intermediary),
     // Fahrzeug-Klassenmerkmale ohne Personenbezug (KEIN VIN, KEIN Kennzeichen).
     car: {
       make: str(car.make),
@@ -132,6 +165,8 @@ export function projectGutachten(report: Json): Json {
     accident: {
       date: str(accident.date), // Schadendatum; Ort/Freitext bewusst verworfen
     },
-    fachwerte: fachwerte(report),
+    // Welche Kalkulationen existieren (Bewertung/Restwert/Minderwert/Reparatur)?
+    dokumente: dokumente(report),
+    fachwerte: fachwerte(),
   };
 }

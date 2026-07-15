@@ -62,28 +62,24 @@ committet). **Zuerst diese Datei + `CLAUDE.md` lesen.**
 
 ## NÄCHSTE SCHRITTE (Auswahl beim Neustart)
 
-### Option A — Phase 4 (autoiXpert)  *(Unterbau gebaut & verifiziert; 1 Sample fehlt)*
-Plan + Stand: **`docs/plan-phase-4.md`** (§ „Stand 2026-07-15"). Ziel: WBW, Restwert,
-Wertminderung (+ Totalschaden/130-%) → Leitfragen 8 (BVSK-Korridor) & 10
-(Totalschadenquote), **plus Bonus Leitfrage 2** (Versicherer je Fall aus
-`insurance.organization_name`).
+### Option A — Phase 4 (autoiXpert)  *(Unterbau gebaut & verifiziert; Architekturfrage offen)*
+Plan + Stand: **`docs/plan-phase-4.md`** (§ „Stand 2026-07-15").
 
-**Gebaut (typecheck grün, DSGVO-Filter gegen echtes Sample verifiziert, noch nicht
-in der Deploy-Kette):** `sql/009_raw_autoixpert.sql`,
+**Gebaut (typecheck grün, DSGVO-Filter gegen ZWEI echte Samples verifiziert — kein
+Leak; noch NICHT in der Deploy-Kette):** `sql/009_raw_autoixpert.sql`,
 `etl/autoixpert/{client,project,extract-gutachten,run-log}.ts`, npm `extract:gutachten`.
-- API bestätigt (Live-n8n): `GET https://app.autoixpert.de/externalApi/v1/reports/{id}`,
-  **Bearer**. `token` = Aktenzeichen. `type` = Gutachtenart (liability→Haftpflicht).
-- Extraktor ist **gegated**: ohne `AUTOIXPERT_API_TOKEN` No-op.
+- API (Live-n8n): `GET …/externalApi/v1/reports/{id}`, **Bearer**. `token` =
+  Aktenzeichen. `type` = Gutachtenart. `AUTOIXPERT_API_TOKEN` ist gesetzt.
+- **Bonus LF2:** `insurance.organization_name` schließt die Versicherer-Lücke.
+- Vermittler pseudonymisiert (kann natürliche Person sein), Dokument-Präsenz als
+  Fachsignal (welche DAT-Kalkulation existiert).
 
-**Noch benötigt (nur noch das):**
-1. **1 FERTIGES Gutachten als JSON** (`completion_date` gesetzt) — Fachwerte fehlen
-   im aufgenommenen Zustand; nur so lassen sich die Feldnamen für WBW/Restwert/
-   Wertminderung/Reparaturkosten/Nutzungsausfall bestätigen (`project.ts::fachwerte()`
-   finalisieren). Frage: strukturierte Felder oder nur DAT-PDF?
-2. `AUTOIXPERT_API_TOKEN` als Coolify-Secret (Bearer, read-only).
-3. Fachfragen `plan-phase-4.md` §7.3–7.4 (Doppelquelle Reparaturkosten, Totalschaden-
-   Definition).
-Danach: `sql/010` (`fact_gutachten` + marts), Golden, Deploy-Kette ergänzen.
+**Zentraler Befund:** WBW/Restwert/Wertminderung/Reparaturkosten stehen **nicht in
+der API — nur in den PDFs** (Inhaber bestätigt). Damit blockiert für LF8/LF10 die
+**Architekturfrage: woher die Zahlen** (Plan §7: A vorerst ohne / B PDF-Parsing /
+C evtl. Valuation-Endpunkt / D Pipedrive-Reparaturkosten). **Nächster Schritt =
+diese Entscheidung**, dann `sql/010` (u. a. `v_versicherer_je_fall` für LF2 ist
+schon jetzt baubar) + Golden + Deploy-Kette.
 
 ### Option B — Phase 5 (Kürzungsgrund / Durchsetzungsquote)  *(kein neuer Zugang nötig)*
 Fundament steht (Phase 3 Positionen). Durchsetzungsquote = 1 − Σ Ausbuchung / Σ
