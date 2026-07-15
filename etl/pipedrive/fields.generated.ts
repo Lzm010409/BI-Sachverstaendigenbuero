@@ -40,7 +40,7 @@ export const DEAL_FIELDS = {
 } as const;
 
 export const DEAL_OPTIONS = {
-  AUSGEBUCHT_GRUND: { 70: "Nebenkosten" } as Record<number, string>,
+  AUSGEBUCHT_GRUND: { 69: "Grundhonorar", 70: "Nebenkosten", 71: "Teilschuld", 73: "Mangel an Beweisen" } as Record<number, string>,
   FAHRZEUGALTER_KLASSE: { 49: "Mittelalt", 51: "> 10 Jahre" } as Record<number, string>,
   SCHADENBEREICH: { 37: "Vorne", 39: "Vorne rechts", 40: "Mitte rechts", 43: "Hinten rechts", 44: "Hinten", 45: "Hinten links" } as Record<number, string>,
   VORSCHADEN_JA_NEIN: { 53: "Ja", 54: "Nein" } as Record<number, string>,
