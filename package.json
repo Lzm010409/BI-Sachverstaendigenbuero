@@ -14,6 +14,7 @@
     "extract:orgs": "tsx etl/pipedrive/extract-organizations.ts",
     "extract:invoices": "tsx etl/sevdesk/extract-invoices.ts",
     "extract:positions": "tsx etl/sevdesk/extract-positions.ts",
+    "load:kategorien": "tsx etl/sevdesk/load-kategorien.ts",
     "test:golden": "tsx scripts/test-golden.ts",
     "test:sevdesk": "tsx scripts/test-sevdesk.ts",
     "load:golden": "tsx scripts/load-golden.ts",
