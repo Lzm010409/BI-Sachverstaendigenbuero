@@ -24,21 +24,31 @@ committet auf Branch `claude/bi-plattform-kfz-hxmpig`).
 - Durchsetzungsquote: Design steht (1 − Σ Ausbuchung / Σ Kürzung, je Versicherer/
   Grund; Teilschuld/Haftungsquote raus) — Umsetzung in **Phase 5**.
 
-## NÄCHSTER SCHRITT (nach Session-Neustart)
+## Deployment (erledigt, 2026-07-15)
 
-**ETL-Ressource in Coolify anlegen (Weg A, via Coolify-API).** Voraussetzung:
-diese ENV-Variablen müssen in der Session vorhanden sein (sonst Neustart):
-`COOLIFY_BASE_URL`, `COOLIFY_API_TOKEN`, `PIPEDRIVE_API_TOKEN`,
-`PIPEDRIVE_COMPANY_DOMAIN`.
+ETL-Ressource `bi-etl-warehouse` in Coolify (`coolify.gollenstede.app`) läuft:
 
-Ablauf:
-1. `printenv` prüfen — sind die vier Variablen da?
-2. Coolify-API: Compose-Ressource aus diesem Repo/Branch anlegen, ins
-   Postgres-Netz hängen, Secrets setzen (Warehouse-DB + Pipedrive), deployen.
-   Dabei laufen Migrationen 001–004.
-3. Extraktion anstoßen (`extract:orgs`, `extract:deals`), `test:golden` grün.
-4. Danach: **Phase 3 (sevDesk positionsscharf)** planen.
+- **Ziel-DB:** das mit dem Metabase-Service (Env 28) gebündelte **Postgres 16**.
+  Warehouse-DB `warehouse`, Host `postgresql`, erreichbar über das externe
+  Docker-Netz des Metabase-Service (`WAREHOUSE_NETWORK` = Service-UUID).
+- **Bootstrap** (Rollen `etl`/`metabase_ro` + DB `warehouse`) war bereits
+  gelaufen; Metabase liest das Warehouse als `metabase_ro`.
+- **Deploy-Service `etl`:** migrate (`sql/001`–`004`) → `extract:orgs` →
+  `extract:deals`. Idempotent/inkrementell, läuft bei jedem Deploy.
+- **Verifiziert** (via Metabase-API gegen die Live-DB): Migrationen angewandt,
+  alle Views vorhanden, `raw`/`_meta` für `metabase_ro` gesperrt (DSGVO ok),
+  **Golden 20/20 grün**.
+- **Re-Baseline Golden:** 4 Deals (355/465/585/607) hatten inzwischen einen in
+  Pipedrive nachgetragenen Ausbuchungsgrund (74 bzw. 69) — an der Quelle
+  bestätigt, Fixture entsprechend aktualisiert. Kein Pipeline-Bug.
+- **Golden ist kein Deploy-Gate** mehr (eigener `golden`-Service, profile
+  `manual`), damit legitime Datenänderungen Deploy/Extraktion nicht blockieren.
 
-Voraussetzung DB: Bootstrap-SQL (Rollen `etl`/`metabase_ro` + DB `warehouse`)
-ist in Phase 1 gelaufen; falls unklar, `scripts/db/00-bootstrap-roles.sql`
-idempotent erneut ausführen.
+Betrieb offen (manuell in Coolify einzurichten): Scheduled Tasks für
+`docker compose run --rm etl` (nächtliche Aktualisierung), `... golden`
+(Canary) und `... backup` (nächtliches pg_dump).
+
+## NÄCHSTER SCHRITT
+
+**Phase 3 (sevDesk positionsscharf)** planen. Voraussetzung für Phase 5
+(Kürzungsgrund).

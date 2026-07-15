@@ -32,8 +32,10 @@ Warehouse als Datenquelle mit dem read-only User `metabase_ro`.
    sowie für die Extraktion `PIPEDRIVE_API_TOKEN`, `PIPEDRIVE_COMPANY_DOMAIN`.
 
 4. **Deploy.** Der `etl`-Service läuft an: Migrationen (`sql/001`–`004`) →
-   Pipedrive-Extraktion (orgs, deals) → Golden-Check. Er beendet sich mit 0.
-   Bei Fehler in irgendeinem Schritt schlägt der Deploy fehl (gewollt).
+   Pipedrive-Extraktion (orgs, deals). Er beendet sich mit 0; bei Fehler
+   schlägt der Deploy fehl (gewollt). Der Golden-Check ist **kein** Deploy-Gate
+   (eigener `golden`-Service, s. u.), damit legitime Datenänderungen in
+   Pipedrive nicht Deploy/Extraktion blockieren.
 
 5. **Metabase-Datenquelle** hinzufügen: Metabase → Admin → Datenbanken →
    PostgreSQL. Host/Port der Instanz, DB `warehouse`, User `metabase_ro`,
@@ -53,7 +55,7 @@ Warehouse als Datenquelle mit dem read-only User `metabase_ro`.
 - Neue Migration = **neue** Datei `sql/NNN_beschreibung.sql` (nächste Nummer).
   Bestehende Dateien **nie** editieren — der Runner bricht bei Checksum-Drift ab.
 - Ausführen passiert automatisch beim Deploy (Teil des `etl`-Service); manuell
-  läuft die volle Kette (Migrate → Extraktion → Golden) über:
+  läuft Migrate + Extraktion über:
   ```
   docker compose run --rm etl
   ```
@@ -99,11 +101,15 @@ dropdb -h <host> -U <admin> warehouse_restore_test
   Beide inkrementell über `raw._sync_state`. Erststart = Vollabzug. Für die
   regelmäßige Aktualisierung: Coolify Scheduled Task `docker compose run --rm etl`.
 - **core/marts** sind Views über `raw` — kein Transform-Schritt, immer aktuell.
-- **Golden-Test nach jedem ETL-Lauf** (read-only, produktionssicher):
+- **Golden-Test** (read-only, produktionssicher) als eigener Service, kein
+  Deploy-Gate:
   ```
-  npm run test:golden       # assertet 20 bekannte Deals gegen fixtures/golden-deals.json
+  docker compose run --rm golden   # bzw. lokal: npm run test:golden
   ```
-  Schlägt er fehl, hat sich die Semantik verschoben → **nicht** ignorieren.
+  Assertet 20 bekannte Deals gegen `fixtures/golden-deals.json`. Schlägt er
+  fehl, **prüfen**: entweder Semantik verschoben (Bug → fixen) **oder** die
+  Quelldaten in Pipedrive haben sich legitim geändert (dann Fixture an der
+  Quelle gegenprüfen und re-baselinen). **Nie** blind ignorieren.
 - **Lokale Entwicklung ohne Pipedrive:** `ALLOW_LOAD_GOLDEN=1 npm run load:golden`
   lädt die Fixtures in `raw` (leert `raw.pipedrive_deals` — nur lokal!).
 - **Benötigte Secrets** zusätzlich: `PIPEDRIVE_API_TOKEN` (read-only),

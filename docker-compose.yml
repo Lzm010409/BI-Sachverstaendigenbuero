@@ -9,12 +9,14 @@
 # Siehe docs/RUNBOOK.md.
 
 services:
-  # Deploy-Lauf: Migrationen -> Pipedrive-Extraktion -> Golden-Check.
-  # Laeuft bei jedem Deploy durch und beendet sich (exit 0 = Erfolg, sonst
-  # schlaegt der Deploy fehl — gewollt). Alle Schritte idempotent/inkrementell:
+  # Deploy-Lauf: Migrationen -> Pipedrive-Extraktion. Laeuft bei jedem Deploy
+  # durch und beendet sich (exit 0 = Erfolg, sonst schlaegt der Deploy fehl).
+  # Beide Schritte idempotent/inkrementell:
   #   migrate  = ueberspringt bereits angewandte Dateien
   #   extract  = inkrementell ueber raw._sync_state
-  #   golden   = read-only Assertion (20 bekannte Deals)
+  # Der Golden-Check ist BEWUSST kein Deploy-Gate: legitime Datenaenderungen in
+  # Pipedrive (z. B. nachgetragener Ausbuchungsgrund) wuerden sonst jeden Deploy
+  # und jede Extraktion blockieren. Golden laeuft als eigener `golden`-Service.
   etl:
     build:
       context: .
@@ -25,8 +27,7 @@ services:
       - >
         npx tsx scripts/migrate.ts &&
         npx tsx etl/pipedrive/extract-organizations.ts &&
-        npx tsx etl/pipedrive/extract-deals.ts &&
-        npx tsx scripts/test-golden.ts
+        npx tsx etl/pipedrive/extract-deals.ts
     environment:
       WAREHOUSE_DB_HOST: ${WAREHOUSE_DB_HOST}
       WAREHOUSE_DB_PORT: ${WAREHOUSE_DB_PORT:-5432}
@@ -37,6 +38,25 @@ services:
       PIPEDRIVE_COMPANY_DOMAIN: ${PIPEDRIVE_COMPANY_DOMAIN}
     networks:
       - warehouse
+    restart: "no"
+
+  # Golden-Check (read-only): assertet core.fact_ausbuchung gegen die 20
+  # handgeprueften Deals in fixtures/golden-deals.json. Kein Deploy-Gate.
+  # Manuell/als Scheduled Task:  docker compose run --rm golden
+  golden:
+    build:
+      context: .
+      dockerfile: docker/migrate.Dockerfile
+    command: ["npx", "tsx", "scripts/test-golden.ts"]
+    environment:
+      WAREHOUSE_DB_HOST: ${WAREHOUSE_DB_HOST}
+      WAREHOUSE_DB_PORT: ${WAREHOUSE_DB_PORT:-5432}
+      WAREHOUSE_DB_NAME: ${WAREHOUSE_DB_NAME:-warehouse}
+      ETL_DB_USER: ${ETL_DB_USER:-etl}
+      ETL_DB_PASSWORD: ${ETL_DB_PASSWORD}
+    networks:
+      - warehouse
+    profiles: ["manual"]
     restart: "no"
 
   # Backup-Runner. Nicht als Dauerdienst und NICHT beim Deploy (profile manual).
