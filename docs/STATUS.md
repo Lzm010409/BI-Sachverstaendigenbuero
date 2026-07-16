@@ -62,9 +62,15 @@ committet). **Zuerst diese Datei + `CLAUDE.md` lesen.**
 
 ## AKTUELLER STAND (2026-07-15)
 
-- **Phase 4 (autoiXpert): PAUSIERT** — Unterbau gebaut & verifiziert, aber die
-  numerischen Fachwerte stehen nur im PDF; der Inhaber klärt die PDF-Verarbeitung.
-  Details + Wiederaufnahme: **`docs/status-phase-4.md`**.
+- **Phase 4 (Fachwerte): OneDrive-Route, im Bau.** Entscheidung: Fachwerte kommen aus
+  den **Gutachten-PDFs in OneDrive** (M365/Graph bewiesen — `read_resource` liefert
+  vollen Text, „Zusammenfassung" trägt alle Fachwerte). Gebaut & verifiziert:
+  `etl/gutachten/parse-fachwerte.ts` (Label-Parser, an echtem Gutachten 10/10 Werte
+  korrekt), `sql/015` `raw.gutachten_fachwerte` + `sql/016` `core.fact_gutachten` +
+  `v_honorar_vs_schaden` (LF8) + `v_totalschaden_quote` (LF10) — lokal verifiziert
+  (Reparatur- vs. Totalschaden-Klassifikation korrekt). **Offen:** n8n-Workflow
+  (OneDrive → Parser → `raw.gutachten_fachwerte`) + Backfill. Alte autoiXpert-API-
+  Route (`docs/status-phase-4.md`) nur noch für Versicherer-Zuordnung (LF2) relevant.
 - **Phase 5 (Kürzung + Durchsetzungsquote): GEBAUT & verifiziert.** Plan:
   **`docs/plan-phase-5.md`** (gegenlesen). Zwei Inhaber-Entscheidungen umgesetzt:
   - **Kürzung** = sevDesk-Rechnungsdifferenz (`sumGross − paidAmount`), außer ±5 ct =
