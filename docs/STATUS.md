@@ -156,10 +156,16 @@ Regex-Parser passt.
 - **DEPLOYT & verifiziert:** `sql/022` = **11 validierte Fälle** → `core.fact_gutachten`
   (Totalschaden/130-% korrekt), `marts.v_totalschaden_quote` (LF10),
   `v_honorar_vs_schaden` (LF8, join auf sevDesk-Grundhonorar).
-- **Offen:** voller Lauf (~881 won-Fälle) — Liste liegt bereit (`scratchpad`);
-  n8n-MCP war bei der 881er-Workflow-Aktualisierung instabil (Stream-Abbrüche).
-  Nachziehen, sobald n8n stabil; upsertet in dieselbe Tabelle. Recent Mai/Juni-2026
-  noch nicht in OneDrive abgelegt (Fehltreffer im Test).
+- **VOLLLAUF FERTIG (2026-07-16):** Execution `1554143` über alle **881 won-Fälle**
+  gelaufen (status `success`, ~7 h, überstand einen n8n-DB-Restart ohne Datenverlust).
+  Ergebnis inkrementell aus dem `Sammeln`-Node geharvestet (Execution-Daten werden
+  bei Erfolg verworfen → währenddessen mitlesen). **`sql/023_backfill_gutachten_full.sql`
+  = 468 Gutachten** (Trefferquote 468/881 ≈ 53 %; Rest = junge 2026-Fälle noch nicht
+  in OneDrive + 5 PDFs ohne Fachwerte-Summary, bewusst verworfen). Datenqualität:
+  alle Aktenzeichen valide, keine Dubletten, **0 unplausible netto→brutto-Ratios**
+  (alle ≈ 1,19). Endstand `raw.gutachten_fachwerte` nach Deploy = **471 distinct**
+  (468 aus 023 + 3 nur in 022 gefundene Archive). **Committet auf Arbeits-Branch;
+  wartet auf Freigabe für FF-Push auf Deploy-Branch.**
 - **Offen/Ausbau:** nur die erste präzise Scheibe. Weitere Kürzungen heißen anders
   (`Vers Ablehnung SVK`, Versicherer-Namen) oder kamen per Mail → Suchbegriffe im
   Reader erweitern; ambige Fälle (0825/1686TG, 1025/1742TG *open*) im Diagnose-View
