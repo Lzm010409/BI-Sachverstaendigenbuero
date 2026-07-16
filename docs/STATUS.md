@@ -89,6 +89,18 @@ committet). **Zuerst diese Datei + `CLAUDE.md` lesen.**
   **Die echte Kürzung braucht das Kürzungsschreiben** → Strategie in
   `docs/strategie-kuerzung-und-pdf.md`.
 
+## n8n-Workflows (Phase 4 & 5, angelegt — Verdrahtung offen)
+
+Code + Anleitung: **`n8n/`**. Beide sind validiert in n8n angelegt; jeweils
+**„Warehouse Postgres"-Credential + n8n↔Warehouse-Konnektivität** verdrahten, dann
+Testlauf.
+- **Phase 4 — Gutachten-Fachwerte** (`BHUg2f27aafCfI5Q`): OneDrive-Gutachten → Graph
+  → PDF → Parser → `raw.gutachten_fachwerte`. Credentials: Graph OAuth2 + Postgres.
+- **Phase 5 — Kürzungsschreiben** (`4JgVp4tCzNHkPCpg`): Outlook-Anhang → **Mistral-OCR
+  + LLM** → Pipedrive-Notiz + `raw.kuerzungsschreiben`. Outlook/Mistral/Pipedrive
+  **auto-zugewiesen**; nur Postgres offen. Schaltet `marts.v_durchsetzung_echt` frei.
+  Nächster Ausbau: Backfill über OneDrive-Fallordner (zweiter Trigger).
+
 ## NÄCHSTE SCHRITTE (Auswahl beim Neustart)
 
 ### Option A — Phase 4 (autoiXpert)  *(Unterbau gebaut & verifiziert; Architekturfrage offen)*
