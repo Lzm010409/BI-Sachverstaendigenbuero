@@ -6,6 +6,24 @@ zuordnen** — daher zusammen gedacht.
 
 ---
 
+## M365-Machbarkeit — BEWIESEN (2026-07-16, Fall 0625/1630TG)
+
+Über den M365-Konnektor (Graph) getestet:
+- **OneDrive/SharePoint:** sauberer Ordner je Fall
+  (`…/Sachverstaendigerei/Gutachten/JJJJ/MM/MMJJ_NummerTG/`) mit Gutachten-PDF,
+  Rechnung, Anschreiben, Aufnahmebogen, WBW-Belegen und einer **`vxs.xml`**
+  (strukturierte DAT-Kalkulation).
+- **`read_resource` liefert den vollen PDF-Text** (Text-Layer, kein OCR). Die
+  „Zusammenfassung des Gutachtens" auf Seite 2 trägt ALLE Fachwerte in konstantem,
+  beschriftetem Format: Reparaturkosten netto/brutto, WBW, Wertminderung, Restwert
+  (bzw. „nicht ermittelt"), Nutzungsausfall/Tag, Beurteilung (Reparatur-/Total-
+  schaden). → **hochzuverlässig parsebar (Label-Regex oder LLM).**
+- **Phase 4 ist damit über OneDrive unblockiert — ohne autoiXpert-API.**
+- **Outlook:** Gutachten-Korrespondenz mit Aktenzeichen im Betreff; Kürzungs-/
+  Regulierungsschreiben kommen meist als **PDF-Anhang** (u. a. über die Kanzlei mit
+  *deren* Az) → Zuordnung über den **Anhang-Inhalt** (Gutachtennummer/Kennzeichen),
+  nicht den Betreff.
+
 ## Ausgangsbefund (an Prod-Daten belegt)
 
 - **Ausbuchung** ist zuverlässig: sevDesk-Belege „Forderungsverlust <Aktenzeichen>"
