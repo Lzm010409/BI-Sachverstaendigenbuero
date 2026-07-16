@@ -103,27 +103,35 @@ Bearer-gesichert). Endpunkte: `GET /pending/gutachten`, `POST /ingest/gutachten`
   **+ Backfill-Zweig** „Backfill: Start" (manuell): OneDrive-Suche `Kürzung` →
   gleiche OCR→LLM→Ingest-Kette (historische Schreiben, `letter_key`-dedupliziert).
 
-### Backfill-Stand (2026-07-16) — OneDrive-Nodes verdrahtet, wartet auf Ingest-Freigabe
+### Kürzungs-Backfill (2026-07-16) — via n8n-Reader, geladen über Deploy-Kette
 
-Beide Workflows lesen OneDrive jetzt über den **nativen Microsoft-OneDrive-Node**
-mit dem bereits hinterlegten Credential **„Microsoft Drive account"**
-(`n0UiHatEWO28b1Uo`) — die alten, unauthentifizierten Graph-HTTP-Nodes sind ersetzt.
-Warehouse ist noch leer (`fact_gutachten=0`, `fact_kuerzungsereignis=0`,
-`fact_forderungsverlust=95`), weil der **Schreibpfad** noch nicht scharf ist.
+OneDrive läuft über SharePoint; die Session hat **keinen** M365-Datei-Zugriff
+(nur `get_me`), n8n hingegen schon (Credential **„Microsoft Drive account"**
+`n0UiHatEWO28b1Uo`). Lösung: **n8n als Reader**, das Warehouse-Schreiben macht die
+**Deploy-Kette** (kein Ingest-Dienst/Credential nötig).
 
-**Nur der Inhaber kann diese zwei Schritte machen (Secrets/Infra):**
-1. **Ingest-Dienst live schalten.** Coolify: Service `ingest` (schon in
-   `docker-compose.yml`, langlaufend, Port 8080) braucht **Domain** →
-   `ingest.gollenstede.app` und **Secret `INGEST_TOKEN`**. Prüfen:
-   `https://ingest.gollenstede.app/health` muss `{"ok":true}` liefern.
-2. **n8n-Credential „Warehouse Ingest"** (Typ *Bearer Auth*, Wert = `INGEST_TOKEN`)
-   anlegen und an den 3 HTTP-Nodes binden: Phase 4 „Offene Aktenzeichen (HTTP)" +
-   „An Warehouse (HTTP)"; Phase 5 „An Warehouse (HTTP)". (Aus der Session nicht
-   möglich: kein Credential-Create über MCP, kein Egress zur Ingest-Domain.)
-
-**Danach Backfill starten:** Phase 4 per Zeitplan/manuell ausführen (zieht offene
-Won-Fälle, liest je Gutachten aus OneDrive); Phase 5 „Backfill: Start" klicken.
-Verifikation über Metabase: `SELECT count(*) FROM core.fact_gutachten` > 0.
+- **Reader-Workflow** `qU8wCN2uqlgaz9rs` „Phase 5 Backfill — Schadenzahlung"
+  (Quelle: `n8n/phase5-backfill-schadenzahlung.workflow.ts`): OneDrive-Suche
+  **`Schadenzahlung`** → Batch-Download (3er, sonst OneDrive-Überlast) → Mistral-OCR
+  → Mistral-LLM → Knoten „Sammeln". Ausgelesen über die **Production-Execution**
+  (manuelle Executions inaktiver Workflows werden nicht gespeichert → Zeitplan +
+  Publish + Production-Mode; danach unpublished).
+- **Präzision:** Dateinamen sind unzuverlässig → gezielt „Schadenzahlung" (17 Treffer,
+  7 echte Fälle in `…/Gutachten/JJJJ/MM/<az>/`, Rest private Konto-PDFs mit
+  `folderAz=null` gefiltert). **Aktenzeichen aus dem Ordnerpfad**, nicht aus dem LLM
+  (der verliest es oft). Aktenzeichen der 7: 1025/1742TG, 0825/1686TG, 1224/1434TG,
+  0225/1506TG, 1223/1029TG, 0825/1683TG, 1122/694TG.
+- **Echte Kürzung (Inhaber-Entscheidung):** `Kürzung = fakturiert (sevDesk/Deal)
+  − gezahlt_sv (Brief)`. `sql/019` upsertet die 7 Briefe nach
+  `raw.kuerzungsschreiben` und legt `marts.v_kuerzung_sevdesk`,
+  `v_durchsetzung_sevdesk` (nur `plausibel` & Kürzung>0) und `v_kuerzung_sevdesk_diagnose`
+  an. Gegen Live-Daten geprüft: 0825/1683TG=390,51 · 1223/1029TG=185,01 ·
+  1224/1434TG=0 (voll) — die Methode fängt Fehl-Lesungen ab (0225/1506TG:
+  gezahlt>fakturiert → `plausibel=false`).
+- **Offen/Ausbau:** nur die erste präzise Scheibe. Weitere Kürzungen heißen anders
+  (`Vers Ablehnung SVK`, Versicherer-Namen) oder kamen per Mail → Suchbegriffe im
+  Reader erweitern; ambige Fälle (0825/1686TG, 1025/1742TG *open*) im Diagnose-View
+  nachbessern. `fact_gutachten` (Phase 4) weiter offen.
 
 ## NÄCHSTE SCHRITTE (Auswahl beim Neustart)
 
