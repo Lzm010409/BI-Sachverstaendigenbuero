@@ -87,6 +87,19 @@ wird endlich belastbar; zusätzlich der Zahlungs-/Kürzungsverlauf je Fall.
 Aktenzeichen zuverlässig im Kürzungsschreiben vor? (c) Zeitleiste in Pipedrive als
 Notiz genügt, oder eigenes Feld/Liste?
 
+### UMGESETZT (2026-07-16) — Intake über geteiltes Postfach + app-only Graph
+
+Der ursprüngliche Outlook-Trigger war **nicht umsetzbar**: er ist *delegiert* und sieht
+nur das eigene Postfach des angemeldeten Nutzers, nicht das **geteilte** Postfach, in
+dem die Abrechnungs-/Kürzungsschreiben landen. Entscheidung des Inhabers: dediziertes
+**geteiltes Postfach `abrechnungsschreiben@gollenstede-sachverstand.de`** (Shared
+Mailbox → keine zusätzliche Exchange-Lizenz). Zugriff **app-only** (OAuth2 Client
+Credentials) statt delegiert; per **RBAC for Applications** (Exchange Online) auf genau
+dieses eine Postfach begrenzt (`Application Mail.Read` + `Mail.ReadWrite`). n8n pollt
+stündlich via Graph statt über den Outlook-Trigger. Umbau im Workflow `4JgVp4tCzNHkPCpg`
++ versionierte Quelle `n8n/phase5-kuerzungsschreiben.workflow.ts`; Details & Go-live-
+Schritte in `n8n/README.md`.
+
 ---
 
 ## Strategie 2 — Massen-PDF-Parsing für Phase 4 (Fachwerte WBW/Restwert/…)

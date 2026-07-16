@@ -37,16 +37,37 @@ ein fehlendes Gutachten den Batch-Loop nicht anhält.
 ## phase5-kuerzungsschreiben.workflow.ts
 **n8n-ID:** `4JgVp4tCzNHkPCpg` · https://n8n-coolify.gollenstede.app/workflow/4JgVp4tCzNHkPCpg
 
-Outlook-Trigger (neue Mail mit Anhang) → Anhang→`data` → **Mistral-OCR** → **Mistral-
-LLM** (Structured-Output) → wenn Kürzungsschreiben: **Pipedrive-Notiz am Deal** +
-`POST /ingest/kuerzung` → `raw.kuerzungsschreiben` → `core.fact_kuerzungsereignis` +
-`marts.v_durchsetzung_echt` (`sql/017`/`018`).
-**Credentials:** Outlook, Mistral Cloud, Pipedrive (von n8n **auto-zugewiesen**) +
-„Warehouse Ingest".
-**Prüfen:** OCR-Ausgabefeld (Prompt bekommt robust den ganzen OCR-Output), Aktenzeichen-
-Treffer in Pipedrive.
+**Intake (umgebaut 2026-07-16): app-only Graph-Poll des GETEILTEN Postfachs
+`abrechnungsschreiben@gollenstede-sachverstand.de`.** Der frühere Outlook-Trigger
+(`microsoftOutlookTrigger`) war *delegiert* und sah nur das eigene Postfach des
+angemeldeten Nutzers → das geteilte Postfach blieb unerreichbar. Neu:
+`Schedule (stündlich)` → `Graph: Mails auflisten` (`GET /users/<mb>/mailFolders/inbox/
+messages?$filter=isRead eq false and hasAttachments eq true`) → `Mails aufteilen` →
+`Graph: Anhänge holen` → `Anhang → Files (Graph)` (erster PDF-Anhang, base64 → binary
+`Files`) → **Mistral-OCR** → **Mistral-LLM** (Structured-Output) → wenn
+Kürzungsschreiben: **Pipedrive-Notiz am Deal** + `POST /ingest/kuerzung` →
+`raw.kuerzungsschreiben` → `core.fact_kuerzungsereignis` + `marts.v_durchsetzung_echt`
+(`sql/017`/`018`). Seitenzweig `Graph: Als gelesen markieren` (PATCH `isRead=true`) =
+Dedup, `onError=continue`.
 
-**Backfill (gebaut):** zweiter Trigger „Backfill: Start" (manuell) → nativer OneDrive-
-Node sucht `Kürzung`-PDFs → Filter → Download → **gleiche** OCR→LLM→Pipedrive+Warehouse-
-Kette. Credential: „Microsoft Drive account". Einmal starten lädt die historischen
-Kürzungsschreiben nach (dedupliziert über `letter_key`, mehrfach ausführbar).
+**Auth (app-only, NICHT delegiert):** generische n8n-Credential **„Microsoft Graph
+App-Only"** (Typ *OAuth2 API*), Grant Type **Client Credentials**, Token-URL
+`https://login.microsoftonline.com/<TENANT_ID>/oauth2/v2.0/token`, Scope
+`https://graph.microsoft.com/.default`. Der Zugriff ist per **RBAC for Applications**
+(Exchange Online) auf genau dieses eine Postfach begrenzt: Rolle `Application Mail.Read`
+(lesen) + `Application Mail.ReadWrite` (Als-gelesen-Markieren/Dedup). Die
+Graph-Security-Credential (`microsoftGraphSecurityOAuth2Api`) ist **delegiert** und hier
+**nicht** verwendbar.
+**Weitere Credentials:** Mistral Cloud, Pipedrive (auto-zugewiesen) + „Warehouse Ingest".
+
+**Go-live-Schritte:** (1) Credential „Microsoft Graph App-Only" anlegen; (2) an den
+3 Graph-Nodes binden; (3) Application-Rolle `Mail.ReadWrite` ergänzen (sonst kein
+Dedup); (4) Trigger „Stündlich Abrechnungspostfach" aktivieren (ist bewusst noch
+deaktiviert). Der alte Trigger „Neue Mail mit Anhang" ist deaktiviert.
+
+**Backfill (gebaut):** Trigger „Backfill: Start" (manuell) → nativer OneDrive-Node sucht
+`Kürzung`-PDFs → Filter → Download (binary `Files`) → **gleiche** OCR→LLM→Pipedrive+
+Warehouse-Kette. Credential: „Microsoft Drive account". Dedupliziert über `letter_key`.
+
+**Manueller Upload:** zusätzlicher Form-Trigger „On form submission" (Datei-Upload)
+speist ebenfalls in die OCR-Kette.
