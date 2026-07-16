@@ -35,6 +35,26 @@ zuordnen** — daher zusammen gedacht.
 
 ---
 
+## Kürzungsschreiben — Format an echtem Sample verifiziert (2026-07-16)
+
+Beispiel: Allianz-Regulierung zu Fall `0224/1101TG` (`…/Gutachten/2024/02/0224_1101TG/
+Vers ABRECHNUNG.pdf`; weitere in Fallordnern, z. B. `2023.05.15 Allianz Kürzung SV
+Kosten.pdf`, `Regulierungsschreiben.pdf`). Befunde:
+
+- **Kürzungsbetrag explizit** im Text: „**831,57 EUR Kürzungsbetrag**" (in der
+  beigefügten Abtretungsvereinbarung). Das ist die gesuchte initiale Kürzung.
+- **Aktenzeichen steht im Dokument** — als Rechnungsnummer „0224/11 01TG01"
+  (Leerzeichen = OCR-Artefakt) → normalisiert `0224/1101TG`. Damit **Zuordnung über
+  den Dokument-Inhalt** (nicht Betreff/Dateiname), robust.
+- **Zahlungs-Breakdown** vorhanden: Reparaturkosten netto, Sachverständigenkosten
+  (gezahlt), Wertminderung, Kostenpauschale, Zahlungsbetrag; Versicherer (Allianz),
+  Schadennummer (AS2024-…). → speisen Kürzungsereignis + Zahlungsverlauf.
+- **CAVEAT — Scans:** Manche Schreiben haben KEINEN Text-Layer (reiner Scan; das
+  erste Allianz-PDF lieferte leeren Text). → **OCR-Fallback nötig.** Wegen
+  Versicherer-Formatvielfalt ist **LLM-Extraktion mit striktem JSON-Schema**
+  (Kürzungsbetrag, Aktenzeichen, Versicherer, Schadennummer, Datum, Positionen)
+  robuster als Regex und deckt Scan (nach OCR) wie Text ab.
+
 ## Strategie 1 — Kürzungsschreiben erfassen, zuordnen & Zahlungsverlauf
 
 **Ziel:** je Fall eine Zeitleiste „Zahlung 01.06. → 150 €, Kürzung 15.06. → 80 €
