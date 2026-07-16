@@ -121,3 +121,37 @@ export function projectPosition(pos: Json): ProjectedPosition {
 
   return { id: String(pos.id), invoice_id: invoiceId ?? "", payload };
 }
+
+/**
+ * Whitelist-Projektion eines sevDesk-Vouchers (Beleg). Für Phase 5 relevant sind
+ * die „Forderungsverlust [Aktenzeichen]"-Belege (die tatsächliche Ausbuchung).
+ *
+ * DSGVO: `supplier`/`supplierName` (Kreditor — kann natürliche Person sein) und
+ * jegliche Adress-/Kontaktfelder werden VERWORFEN. `description` trägt nur den
+ * Belegtitel inkl. Aktenzeichen (Geschäftsschlüssel, kein Personenbezug) und bleibt.
+ * Alle Beträge brutto/netto wie geliefert (keine Umrechnung).
+ */
+export function projectVoucher(v: Json): Json {
+  return {
+    id: String(v.id),
+    objectName: v.objectName ?? "Voucher",
+    // Belegtitel = „Forderungsverlust <Aktenzeichen>" (Geschäftsschlüssel).
+    description: v.description ?? null,
+    voucherDate: v.voucherDate ?? null,
+    status: v.status ?? null,
+    creditDebit: v.creditDebit ?? null,
+    voucherType: v.voucherType ?? null,
+    taxRule: ref(v.taxRule),
+    taxType: v.taxType ?? null,
+    currency: v.currency ?? null,
+    sumNet: v.sumNet ?? null,
+    sumTax: v.sumTax ?? null,
+    sumGross: v.sumGross ?? null,
+    sumNetAccounting: v.sumNetAccounting ?? null,
+    sumTaxAccounting: v.sumTaxAccounting ?? null,
+    sumGrossAccounting: v.sumGrossAccounting ?? null,
+    paidAmount: v.paidAmount ?? null,
+    create: v.create ?? null,
+    update: v.update ?? null,
+  };
+}

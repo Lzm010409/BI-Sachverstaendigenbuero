@@ -160,24 +160,32 @@ Versicherer/Werkstatt/Anwalt als juristische Personen im Klartext erlaubt.
 - ~~Grain~~ — folgt aus der Quelle: **je Rechnung/Fall** (paidAmount ist nicht
   positionsscharf). Positionsscharfe Kürzung („welche Position") bleibt offen.
 
-**Wichtigster Befund — LF3 (Durchsetzungsquote) ist mit diesen Quellen noch nicht
-messbar:** `v_durchsetzung` an Echtdaten zeigt (lokal reproduziert): die
-sevDesk-Differenz (Kürzung) und die Pipedrive-Ausbuchung sind bei geschlossenen
-Fällen praktisch **dieselbe** Größe (beide = finaler Fehlbetrag) → Durchsetzungsquote
-≈ 0. Das **Kürzungsvolumen** (LF2) ist voll da; die **Durchsetzung** (was per
-Stellungnahme zurückgeholt wurde) braucht ein **separates Signal**:
+**GELÖST (Inhaber, 2026-07-15): Ausbuchung aus dem sevDesk-Beleg.** Je Ausbuchung
+erstellt das Büro einen sevDesk-Beleg (Voucher) „Forderungsverlust <Aktenzeichen>";
+dessen Betrag ist die tatsächliche Ausbuchung — eine EIGENE, vollständige Quelle
+(unabhängig von der Kürzung und vollständiger als die dünne Pipedrive-
+`ausgebucht_betrag`). Damit wird die Durchsetzungsquote echt messbar:
 
-1. **Stellungnahme-Erfolg:** Gibt es je Fall den *ursprünglich* gekürzten Betrag
-   ODER den per Stellungnahme durchgesetzten Betrag getrennt vom finalen Verlust?
-   (z. B. in autoiXpert, oder als neues Pipedrive-Feld.) Ohne das misst das System
-   nur, *dass* gekürzt wurde, nicht, wie viel *durchgesetzt* wurde.
-2. **Kürzungsgrund-Enum:** `Ausgebucht Grund` in `Kürzungsgrund` umbenennen/aufteilen?
-   Finale Werteliste (Teilschuld/Haftungsquote sauber getrennt)?
-3. **Versicherer je Fall:** autoiXpert (Phase 4) als primäre Quelle für LF2
-   freigeben? (Aktuell `org_id` → `dim_organisation`, dünn befüllt.)
-4. **USt-Einbehalt-Toleranz:** ±5 ct bestätigt? Und: kann eine Rechnung *gleichzeitig*
-   USt-Einbehalt UND echte Kürzung tragen (dann greift die ±5-ct-Regel nicht — heute
-   als reine Kürzung gewertet)?
+> **Kürzung** = `sumGross − paidAmount` je Rechnung (fact_kuerzung).
+> **Ausbuchung** = Σ Forderungsverlust-Beleg je Fall (fact_forderungsverlust).
+> **Durchsetzungsquote = 1 − Σ Ausbuchung / Σ Kürzung.** Kein Beleg = nichts
+> abgeschrieben = voll durchgesetzt.
+
+Gebaut & lokal verifiziert (`sql/012` raw, `sql/013` core+marts, `extract-vouchers.ts`):
+an Testfällen ergibt sich eine plausible Quote (z. B. Kürzung 200 / Ausbuchung 40 →
+80 % durchgesetzt), Teilschuld korrekt ausgeschlossen. `v_durchsetzung_diagnose`
+stellt je Fall Rechnungsdifferenz, Pipedrive- und Beleg-Ausbuchung nebeneinander.
+
+**Noch offen:**
+1. **Betragsfeld des Belegs:** `sumGross` (brutto, aktueller Default) oder `sumNet`
+   der maßgebliche Ausbuchungsbetrag? An einem echten Forderungsverlust-Beleg zu
+   bestätigen.
+2. **An Prod-Daten prüfen (Metabase):** `v_durchsetzung_diagnose` — laufen Kürzung
+   und Beleg-Ausbuchung wie erwartet auseinander? Coverage des Aktenzeichen-Joins?
+3. **Kürzungsgrund-Enum:** `Ausgebucht Grund` in `Kürzungsgrund` umbenennen/aufteilen?
+4. **Versicherer je Fall:** autoiXpert (Phase 4) als primäre Quelle für LF2 freigeben?
+5. **USt-Einbehalt:** ±5 ct bestätigt? Rechnung mit *gleichzeitig* USt-Einbehalt UND
+   Kürzung (heute als reine Kürzung gewertet)?
 
 ---
 
@@ -187,13 +195,14 @@ Stellungnahme zurückgeholt wurde) braucht ein **separates Signal**:
 - [x] `core.fact_kuerzung` gebaut (`sql/010`), Grain je Rechnung/Fall, Teilschuld
       getrennt, USt-Einbehalt-Ausnahme, nur `won`, null≠0
 - [x] marts `v_kuerzung_je_versicherer` (LF2), `v_kuerzung_je_grund`,
-      `v_kuerzung_monat`, `v_durchsetzung` (Fundament LF3)
-- [x] Logik lokal an gezielten Testfällen verifiziert
-- [ ] **An Prod-Daten prüfen** (Metabase): Coverage des Aktenzeichen-Joins,
-      Verteilung Kürzungsquote je Versicherer, Bestätigung der LF3-Degeneration
-- [ ] **LF3 freischalten:** Stellungnahme-Erfolg-Signal (§8.1) — dann echte
-      Durchsetzungsquote
-- [ ] Kürzungsgrund-Enum final (§8.2); Versicherer-Join autoiXpert (§8.3)
-- [ ] `sql/010` in die Deploy-Kette? (reine Views, laufen mit `migrate` — kein
-      Extraktor nötig; nach Gegenlesen)
+      `v_kuerzung_monat`
+- [x] **Ausbuchung aus sevDesk-Beleg** (`sql/012` raw + `extract-vouchers.ts` +
+      `sql/013` `core.fact_forderungsverlust`): Durchsetzungsquote messbar
+- [x] `marts.v_durchsetzung` (LF3, Kürzung vs. Beleg-Ausbuchung) +
+      `v_durchsetzung_diagnose`
+- [x] Logik lokal an gezielten Testfällen verifiziert (inkl. echter Durchsetzung)
+- [ ] **Betragsfeld bestätigen** (Beleg `sumGross` vs. `sumNet`) an echtem Sample
+- [ ] `extract:vouchers` in die Deploy-Kette (`docker-compose`), dann an Prod-Daten
+      prüfen (Metabase: `v_durchsetzung_diagnose`)
+- [ ] Kürzungsgrund-Enum final; Versicherer-Join autoiXpert (Phase 4)
 - [ ] Metabase-Dashboards (Phase 7)
