@@ -139,8 +139,27 @@ OneDrive läuft über SharePoint; die Session hat **keinen** M365-Datei-Zugriff
   ab. Zwei Bugs unterwegs gefixt: crashender Ingest-Container vergiftete den Deploy
   (entfernt); Spaltennamen-Mismatch `fv.ausbuchung`/`ausgebucht` ließ `CREATE VIEW`
   in `021` scheitern (Bisektion über 019/020/021).
-- **Offen:** Phase 4 (`BHUg2f27aafCfI5Q`) hängt noch am toten Ingest-Pfad → auf das
-  Reader-Muster umstellen. Kürzungs-Suche über `Schadenzahlung` hinaus erweitern.
+- **Offen (Kürzung):** Suche über `Schadenzahlung` hinaus erweitern.
+
+### Phase 4 (Gutachten-Fachwerte) — Reader gebaut, 11 Fälle live (2026-07-16)
+
+Kein Ingest mehr; **n8n-Reader** liest je Aktenzeichen aus OneDrive und lädt via
+Migration. **Befund:** auch Archive (<2026, Fremdprogramm „Altova StyleVision")
+haben eine **Textebene** und exakt das „Zusammenfassung des Gutachtens"-Format →
+**kein OCR**, nur **3 Seiten** (`maxPages:3`), quasi kostenlos; der Crown-Jewel-
+Regex-Parser passt.
+- **Reader** `Qu9rKyRoMbQ6cxTx` „Phase 4 — Gutachten Fachwerte (Per-Fall, 3 S.)":
+  Fälle → je Aktenzeichen OneDrive-Suche (Aktenzeichen **ohne Slash**, sonst „Bad
+  request"; `alwaysOutputData` sonst stoppt der Batch-Loop) → Gutachten-PDF wählen →
+  Download → PDF-Text 3 Seiten → LLM/Regex → Sammeln (`textLen`-Gate gegen LLM-
+  Halluzination). Ausgelesen über die laufende Execution.
+- **DEPLOYT & verifiziert:** `sql/022` = **11 validierte Fälle** → `core.fact_gutachten`
+  (Totalschaden/130-% korrekt), `marts.v_totalschaden_quote` (LF10),
+  `v_honorar_vs_schaden` (LF8, join auf sevDesk-Grundhonorar).
+- **Offen:** voller Lauf (~881 won-Fälle) — Liste liegt bereit (`scratchpad`);
+  n8n-MCP war bei der 881er-Workflow-Aktualisierung instabil (Stream-Abbrüche).
+  Nachziehen, sobald n8n stabil; upsertet in dieselbe Tabelle. Recent Mai/Juni-2026
+  noch nicht in OneDrive abgelegt (Fehltreffer im Test).
 - **Offen/Ausbau:** nur die erste präzise Scheibe. Weitere Kürzungen heißen anders
   (`Vers Ablehnung SVK`, Versicherer-Namen) oder kamen per Mail → Suchbegriffe im
   Reader erweitern; ambige Fälle (0825/1686TG, 1025/1742TG *open*) im Diagnose-View
