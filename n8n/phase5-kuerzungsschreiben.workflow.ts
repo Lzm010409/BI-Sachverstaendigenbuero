@@ -98,6 +98,48 @@ const ingestPost = node({
   }
 });
 
+// --- Backfill-Zweig: historische Kürzungsschreiben aus OneDrive ---------------
+// Manueller Start durchsucht die OneDrive nach „Kürzung"-PDFs (nativer OneDrive-
+// Node, Credential „Microsoft Drive account") und speist sie in dieselbe
+// OCR→LLM→Pipedrive+Warehouse-Kette wie die laufenden Mail-Anhänge.
+const backfillStart = trigger({
+  type: 'n8n-nodes-base.manualTrigger', version: 1,
+  config: { name: 'Backfill: Start', parameters: {} }
+});
+
+const backfillSearch = node({
+  type: 'n8n-nodes-base.microsoftOneDrive', version: 1.1,
+  config: {
+    name: 'Backfill: OneDrive Suche',
+    parameters: { resource: 'file', operation: 'search', query: 'Kürzung' },
+    credentials: { microsoftOneDriveOAuth2Api: newCredential('Microsoft Drive account') }
+  }
+});
+
+const backfillFilter = node({
+  type: 'n8n-nodes-base.code', version: 2,
+  config: {
+    name: 'Backfill: Dateien', parameters: { language: 'javaScript',
+      jsCode: `const out = [];
+for (const it of $input.all()) {
+  const x = it.json;
+  if (/\\.pdf$/i.test(x.name || '') && !/(archiv|kopie)/i.test(x.name || '')) out.push({ json: { fileId: x.id, name: x.name } });
+}
+return out;`
+    }
+  }
+});
+
+const backfillDownload = node({
+  type: 'n8n-nodes-base.microsoftOneDrive', version: 1.1,
+  config: {
+    name: 'Backfill: OneDrive Download',
+    parameters: { resource: 'file', operation: 'download', fileId: expr('{{ $json.fileId }}'), binaryPropertyName: 'data' },
+    credentials: { microsoftOneDriveOAuth2Api: newCredential('Microsoft Drive account') }
+  }
+});
+
 export default workflow('phase5-kuerzungsschreiben', 'Phase 5 — Kürzungsschreiben → Pipedrive + Warehouse')
   .add(outlookTrigger).to(normAttach).to(ocr).to(llm).to(isKuerzung.onTrue(dealSearch.to(buildNote).to(noteCreate)))
-  .add(buildNote).to(ingestPost);
+  .add(buildNote).to(ingestPost)
+  .add(backfillStart).to(backfillSearch).to(backfillFilter).to(backfillDownload).to(ocr);

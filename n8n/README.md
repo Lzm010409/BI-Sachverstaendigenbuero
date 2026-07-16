@@ -26,11 +26,13 @@ Coolify-Domain erreichbar ist. Auth: `Authorization: Bearer $INGEST_TOKEN`.
 **n8n-ID:** `BHUg2f27aafCfI5Q` · https://n8n-coolify.gollenstede.app/workflow/BHUg2f27aafCfI5Q
 
 Zeitplan → `GET /pending/gutachten` (offene Fälle) → je Fall Gutachten in OneDrive
-suchen (Graph) → PDF laden → Text extrahieren → Fachwerte-Parser (Code, identisch zu
-`etl/gutachten/parse-fachwerte.ts`) → `POST /ingest/gutachten` → `raw.gutachten_fachwerte`
-→ `core.fact_gutachten` (`sql/016`).
-**Credentials:** Microsoft Graph OAuth2 (`Files.Read.All`) + „Warehouse Ingest".
-**Prüfen:** OneDrive-Pfad (persönlich vs. SharePoint-Site), Testlauf.
+suchen (**nativer OneDrive-Node**) → Download → Text extrahieren → Fachwerte-Parser
+(Code, identisch zu `etl/gutachten/parse-fachwerte.ts`) → `POST /ingest/gutachten` →
+`raw.gutachten_fachwerte` → `core.fact_gutachten` (`sql/016`).
+**Credentials:** „Microsoft Drive account" (OneDrive, hinterlegt) + „Warehouse Ingest".
+**Prüfen:** OneDrive-Suchtreffer je Aktenzeichen (Ordner-/Dateibenennung), Testlauf.
+Die OneDrive-/Extract-/Ingest-Nodes sind fehlertolerant (`onError: continue`), damit
+ein fehlendes Gutachten den Batch-Loop nicht anhält.
 
 ## phase5-kuerzungsschreiben.workflow.ts
 **n8n-ID:** `4JgVp4tCzNHkPCpg` · https://n8n-coolify.gollenstede.app/workflow/4JgVp4tCzNHkPCpg
@@ -44,5 +46,7 @@ LLM** (Structured-Output) → wenn Kürzungsschreiben: **Pipedrive-Notiz am Deal
 **Prüfen:** OCR-Ausgabefeld (Prompt bekommt robust den ganzen OCR-Output), Aktenzeichen-
 Treffer in Pipedrive.
 
-**Nächster Ausbau:** Kürzungsschreiben-Backfill über die OneDrive-Fallordner (zweiter
-Trigger, gleiche Verarbeitung).
+**Backfill (gebaut):** zweiter Trigger „Backfill: Start" (manuell) → nativer OneDrive-
+Node sucht `Kürzung`-PDFs → Filter → Download → **gleiche** OCR→LLM→Pipedrive+Warehouse-
+Kette. Credential: „Microsoft Drive account". Einmal starten lädt die historischen
+Kürzungsschreiben nach (dedupliziert über `letter_key`, mehrfach ausführbar).

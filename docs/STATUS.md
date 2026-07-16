@@ -95,13 +95,35 @@ n8n erreicht die DB nicht → Schreiben/Lesen über den **HTTP-Ingest-Dienst**
 `etl/ingest/server.ts` (Coolify-Service `ingest`, langlaufend, im Warehouse-Netz,
 Bearer-gesichert). Endpunkte: `GET /pending/gutachten`, `POST /ingest/gutachten`,
 `POST /ingest/kuerzung`, `/health`. Lokal end-to-end getestet. Details: **`n8n/README.md`**.
-- **Phase 4** (`BHUg2f27aafCfI5Q`): Zeitplan → pending → OneDrive-Gutachten (Graph) →
-  Parser → `POST /ingest/gutachten`.
-- **Phase 5** (`4JgVp4tCzNHkPCpg`): Outlook-Anhang → **Mistral-OCR + LLM** →
+- **Phase 4** (`BHUg2f27aafCfI5Q`): Zeitplan → pending → OneDrive-Gutachten
+  (**nativer OneDrive-Node**, Credential „Microsoft Drive account") → Parser →
+  `POST /ingest/gutachten`. Fehlertolerant (`onError: continue`).
+- **Phase 5** (`4JgVp4tCzNHkPCpg`, aktiv): Outlook-Anhang → **Mistral-OCR + LLM** →
   Pipedrive-Notiz + `POST /ingest/kuerzung` → `marts.v_durchsetzung_echt`.
-- **Einrichtung (Inhaber):** Coolify — Domain auf Service `ingest` (Port 8080) +
-  Secret `INGEST_TOKEN`. n8n — Credential „Warehouse Ingest" (Bearer) + Graph OAuth2.
-  Dann Testlauf. Kein DB-Zugriff aus n8n nötig.
+  **+ Backfill-Zweig** „Backfill: Start" (manuell): OneDrive-Suche `Kürzung` →
+  gleiche OCR→LLM→Ingest-Kette (historische Schreiben, `letter_key`-dedupliziert).
+
+### Backfill-Stand (2026-07-16) — OneDrive-Nodes verdrahtet, wartet auf Ingest-Freigabe
+
+Beide Workflows lesen OneDrive jetzt über den **nativen Microsoft-OneDrive-Node**
+mit dem bereits hinterlegten Credential **„Microsoft Drive account"**
+(`n0UiHatEWO28b1Uo`) — die alten, unauthentifizierten Graph-HTTP-Nodes sind ersetzt.
+Warehouse ist noch leer (`fact_gutachten=0`, `fact_kuerzungsereignis=0`,
+`fact_forderungsverlust=95`), weil der **Schreibpfad** noch nicht scharf ist.
+
+**Nur der Inhaber kann diese zwei Schritte machen (Secrets/Infra):**
+1. **Ingest-Dienst live schalten.** Coolify: Service `ingest` (schon in
+   `docker-compose.yml`, langlaufend, Port 8080) braucht **Domain** →
+   `ingest.gollenstede.app` und **Secret `INGEST_TOKEN`**. Prüfen:
+   `https://ingest.gollenstede.app/health` muss `{"ok":true}` liefern.
+2. **n8n-Credential „Warehouse Ingest"** (Typ *Bearer Auth*, Wert = `INGEST_TOKEN`)
+   anlegen und an den 3 HTTP-Nodes binden: Phase 4 „Offene Aktenzeichen (HTTP)" +
+   „An Warehouse (HTTP)"; Phase 5 „An Warehouse (HTTP)". (Aus der Session nicht
+   möglich: kein Credential-Create über MCP, kein Egress zur Ingest-Domain.)
+
+**Danach Backfill starten:** Phase 4 per Zeitplan/manuell ausführen (zieht offene
+Won-Fälle, liest je Gutachten aus OneDrive); Phase 5 „Backfill: Start" klicken.
+Verifikation über Metabase: `SELECT count(*) FROM core.fact_gutachten` > 0.
 
 ## NÄCHSTE SCHRITTE (Auswahl beim Neustart)
 

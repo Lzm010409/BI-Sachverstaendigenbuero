@@ -1,5 +1,9 @@
 import { workflow, node, trigger, splitInBatches, nextBatch, newCredential, expr } from '@n8n/workflow-sdk';
 
+// OneDrive-Zugriff über den nativen Microsoft-OneDrive-Node (Credential
+// „Microsoft Drive account", Typ microsoftOneDriveOAuth2Api) — NICHT mehr über
+// generische Graph-HTTP-Requests. Das Credential ist im n8n bereits hinterlegt.
+
 // Ingest-Basis-URL (Coolify-Domain des ingest-Dienstes). Ggf. anpassen.
 const INGEST = 'https://ingest.gollenstede.app';
 
@@ -20,31 +24,35 @@ const getPending = node({
 const loop = splitInBatches({ version: 3, config: { name: 'Loop Over Cases', parameters: { batchSize: 1 } } });
 
 const searchFile = node({
-  type: 'n8n-nodes-base.httpRequest', version: 4.4,
+  type: 'n8n-nodes-base.microsoftOneDrive', version: 1.1,
   config: {
-    name: 'Suche Gutachten (Graph)',
-    parameters: { method: 'GET', url: expr("https://graph.microsoft.com/v1.0/me/drive/root/search(q='{{ $json.ordner }}')"), authentication: 'genericCredentialType', genericAuthType: 'oAuth2Api' },
-    credentials: { oAuth2Api: newCredential('Microsoft Graph OAuth2') }
+    name: 'OneDrive: Suche',
+    parameters: { resource: 'file', operation: 'search', query: expr('{{ $json.ordner }}') },
+    credentials: { microsoftOneDriveOAuth2Api: newCredential('Microsoft Drive account') }
   }
 });
 
 const pickFile = node({
   type: 'n8n-nodes-base.code', version: 2,
   config: {
-    name: 'Gutachten-PDF wählen', parameters: { mode: 'runOnceForEachItem', language: 'javaScript',
-      jsCode: `const az = $('Loop Over Cases').item.json.aktenzeichen;
-const files = ($json.value || []).filter(x => /\\.pdf$/i.test(x.name || ''));
-const pref = files.filter(x => /utachten/i.test(x.name) && !/(archiv|kopie|aufnahme)/i.test(x.name));
-const chosen = pref[0] || files.filter(x => /utachten/i.test(x.name))[0] || null;
-if (!chosen) return { json: { skip: true, aktenzeichen: az } };
-return { json: { downloadUrl: chosen['@microsoft.graph.downloadUrl'], name: chosen.name, aktenzeichen: az } };`
+    name: 'Gutachten-PDF wählen', parameters: { mode: 'runOnceForAllItems', language: 'javaScript',
+      jsCode: `const az = $('Loop Over Cases').first().json.aktenzeichen;
+const files = $input.all().map(i => i.json).filter(x => /\\.pdf$/i.test(x.name || ''));
+const pref = files.filter(x => /utachten/i.test(x.name) && !/(archiv|kopie|aufnahme|rechnung)/i.test(x.name));
+const chosen = pref[0] || files.filter(x => /utachten/i.test(x.name))[0] || files[0] || null;
+if (!chosen) return [{ json: { skip: true, aktenzeichen: az } }];
+return [{ json: { fileId: chosen.id, name: chosen.name, aktenzeichen: az } }];`
     }
   }
 });
 
 const downloadPdf = node({
-  type: 'n8n-nodes-base.httpRequest', version: 4.4,
-  config: { name: 'PDF laden', parameters: { method: 'GET', url: expr('{{ $json.downloadUrl }}'), authentication: 'none', options: { response: { response: { responseFormat: 'file', outputPropertyName: 'data' } } } } }
+  type: 'n8n-nodes-base.microsoftOneDrive', version: 1.1,
+  config: {
+    name: 'OneDrive: Download',
+    parameters: { resource: 'file', operation: 'download', fileId: expr('{{ $json.fileId }}'), binaryPropertyName: 'data' },
+    credentials: { microsoftOneDriveOAuth2Api: newCredential('Microsoft Drive account') }
+  }
 });
 
 const extractPdf = node({
