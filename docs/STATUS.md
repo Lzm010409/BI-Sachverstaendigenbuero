@@ -133,6 +133,14 @@ OneDrive läuft über SharePoint; die Session hat **keinen** M365-Datei-Zugriff
   `etl`-One-Shot NICHT zuverlässig → `migrate` läuft nicht. **Nur der UI-Deploy**
   („Removing old containers → New container started") führt die Kette aus. Nach Push
   auf den Deploy-Branch also in der Coolify-UI deployen.
+- **DEPLOYT & verifiziert (2026-07-16):** `fact_kuerzungsereignis=7`,
+  `v_durchsetzung_sevdesk` mit 4 plausiblen Fällen (0825/1683TG **93,1 %**;
+  1223/1029TG/0825/1686TG/1025/1742TG 100 %), Diagnose-View fängt die 3 Nicht-Fälle
+  ab. Zwei Bugs unterwegs gefixt: crashender Ingest-Container vergiftete den Deploy
+  (entfernt); Spaltennamen-Mismatch `fv.ausbuchung`/`ausgebucht` ließ `CREATE VIEW`
+  in `021` scheitern (Bisektion über 019/020/021).
+- **Offen:** Phase 4 (`BHUg2f27aafCfI5Q`) hängt noch am toten Ingest-Pfad → auf das
+  Reader-Muster umstellen. Kürzungs-Suche über `Schadenzahlung` hinaus erweitern.
 - **Offen/Ausbau:** nur die erste präzise Scheibe. Weitere Kürzungen heißen anders
   (`Vers Ablehnung SVK`, Versicherer-Namen) oder kamen per Mail → Suchbegriffe im
   Reader erweitern; ambige Fälle (0825/1686TG, 1025/1742TG *open*) im Diagnose-View
