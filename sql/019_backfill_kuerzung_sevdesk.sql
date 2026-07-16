@@ -1,21 +1,21 @@
--- 019_backfill_kuerzung_sevdesk.sql — Phase 5: historischer Kürzungs-Backfill
+-- 019_backfill_kuerzung_sevdesk.sql — Phase 5: historischer Kürzungs-Backfill (Daten)
 --
 -- Quelle: Versicherer-Schadenzahlungs-/Abrechnungsschreiben aus OneDrive
 -- (Ordner .../Gutachten/JJJJ/MM/<Aktenzeichen>/…). Extraktion via n8n-Reader
 -- (nativer OneDrive-Node → Mistral-OCR → Mistral-LLM), gelesen aus der Execution.
 --
--- Domänenregel (Inhaber-Entscheidung 2026-07-16): die ECHTE Kürzung wird NICHT
--- aus dem Brief geraten, sondern berechnet:
---     Kürzung = fakturierte SV-Kosten (sevDesk/Deal, verlässlich)
---               − gezahlte SV-Kosten (aus dem Brief).
--- Der Brief liefert also nur `sachverstaendigenkosten` (= gezahlt) + Kontext.
--- Alle Beträge brutto. Aktenzeichen kommt aus dem OneDrive-Ordnerpfad (der
--- LLM verliest es häufig), nicht aus der LLM-Ausgabe.
+-- Nur die ROHDATEN (Upsert nach raw). Die Marts (echte Kürzung = fakturiert −
+-- gezahlt_sv) stehen in sql/020 (v_kuerzung_sevdesk) + sql/021 (Durchsetzung/
+-- Diagnose) — bewusst getrennt, damit ein View-Fehler das Laden nicht blockiert.
+--
+-- Domänenregel (Inhaber 2026-07-16): Kürzung wird NICHT aus dem Brief geraten,
+-- sondern berechnet = fakturierte SV-Kosten (sevDesk/Deal) − gezahlte SV-Kosten
+-- (Brief). Der Brief liefert nur `sachverstaendigenkosten` (= gezahlt) + Kontext.
+-- Aktenzeichen aus dem OneDrive-Ordnerpfad (LLM verliest es oft). Beträge brutto.
 --
 -- DSGVO: nur PII-freie Fakten (Aktenzeichen, Versicherer = jur. Person,
 -- Schadennummer = pseudonyme Referenz, Beträge, Datum). Keine Klarnamen/VIN/Kennzeichen.
 
--- --- raw: die 7 gefundenen Schreiben (idempotenter Upsert) ---------------------
 INSERT INTO raw.kuerzungsschreiben (letter_key, aktenzeichen, payload, quelle, extracted_at) VALUES
   ('1025/1742TG|AD2025-41508200|onedrive', '1025/1742TG',
    '{"versicherer":"ADAC Autoversicherung AG","schadennummer":"AD2025-41508200","datum":"2025-11-21","sachverstaendigenkosten":361.60,"zahlungsbetrag":2195.87}'::jsonb,
@@ -41,71 +41,3 @@ INSERT INTO raw.kuerzungsschreiben (letter_key, aktenzeichen, payload, quelle, e
 ON CONFLICT (letter_key) DO UPDATE
   SET aktenzeichen = EXCLUDED.aktenzeichen, payload = EXCLUDED.payload,
       quelle = EXCLUDED.quelle, extracted_at = now();
-
--- --- marts: echte Kürzung = fakturiert − gezahlt_sv ---------------------------
--- Ein Schreiben je Fall. Fakturierte SV-Kosten aus fact_ausbuchung
--- (deal_value_brutto = Rechnungssumme brutto, deckungsgleich mit den sevDesk-
--- Positionen). `plausibel` = Fall in sevDesk vorhanden UND gezahlt ≤ fakturiert
--- (fängt Fehl-Lesungen des Briefs ab, z. B. gezahlt > fakturiert).
-CREATE OR REPLACE VIEW marts.v_kuerzung_sevdesk AS
-WITH brief AS (
-  SELECT aktenzeichen,
-         max(versicherer)       AS versicherer,
-         max(sv_kosten_gezahlt) AS gezahlt_sv,
-         max(datum)             AS brief_datum
-  FROM core.fact_kuerzungsereignis
-  WHERE sv_kosten_gezahlt IS NOT NULL
-  GROUP BY aktenzeichen
-),
-fakt AS (
-  SELECT aktenzeichen, max(deal_value_brutto) AS fakturiert
-  FROM core.fact_ausbuchung
-  GROUP BY aktenzeichen
-)
-SELECT
-  b.aktenzeichen,
-  b.versicherer,
-  f.fakturiert,
-  b.gezahlt_sv,
-  round(f.fakturiert - b.gezahlt_sv, 2)                          AS kuerzung_berechnet,
-  b.brief_datum,
-  (f.fakturiert IS NOT NULL AND b.gezahlt_sv <= f.fakturiert)    AS plausibel
-FROM brief b
-LEFT JOIN fakt f USING (aktenzeichen);
-
--- Echte Durchsetzungsquote je Fall: berechnete Kürzung vs. tatsächlich
--- ausgebuchter Forderungsverlust. Nur plausible Fälle.
-CREATE OR REPLACE VIEW marts.v_durchsetzung_sevdesk AS
-WITH fv AS (
-  SELECT aktenzeichen, sum(forderungsverlust_brutto) AS ausgebucht
-  FROM core.fact_forderungsverlust
-  WHERE aktenzeichen IS NOT NULL
-  GROUP BY aktenzeichen
-)
-SELECT
-  k.aktenzeichen,
-  k.versicherer,
-  k.fakturiert,
-  k.gezahlt_sv,
-  k.kuerzung_berechnet,
-  COALESCE(fv.ausbuchung, 0)                                             AS ausgebucht,
-  k.kuerzung_berechnet - COALESCE(fv.ausbuchung, 0)                      AS durchgesetzt,
-  CASE WHEN k.kuerzung_berechnet > 0
-       THEN round(1 - COALESCE(fv.ausbuchung, 0) / k.kuerzung_berechnet, 4)
-  END                                                                    AS durchsetzungsquote
-FROM marts.v_kuerzung_sevdesk k
-LEFT JOIN fv USING (aktenzeichen)
-WHERE k.plausibel AND k.kuerzung_berechnet > 0;
-
--- Diagnose: ALLE Schreiben inkl. unplausibler (gezahlt>fakturiert, fehlende
--- sevDesk-Zuordnung) — erste Anlaufstelle, um Fehl-Lesungen nachzubessern.
-CREATE OR REPLACE VIEW marts.v_kuerzung_sevdesk_diagnose AS
-SELECT
-  k.*,
-  CASE
-    WHEN k.fakturiert IS NULL              THEN 'kein sevDesk-Fall (z. B. vor SEVDESK_SINCE)'
-    WHEN k.gezahlt_sv > k.fakturiert       THEN 'gezahlt > fakturiert — Brief vermutlich falsch gelesen'
-    WHEN k.kuerzung_berechnet = 0          THEN 'voll gezahlt, keine Kürzung'
-    ELSE 'ok'
-  END AS befund
-FROM marts.v_kuerzung_sevdesk k;

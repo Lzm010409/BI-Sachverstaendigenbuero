@@ -122,12 +122,17 @@ OneDrive läuft über SharePoint; die Session hat **keinen** M365-Datei-Zugriff
   (der verliest es oft). Aktenzeichen der 7: 1025/1742TG, 0825/1686TG, 1224/1434TG,
   0225/1506TG, 1223/1029TG, 0825/1683TG, 1122/694TG.
 - **Echte Kürzung (Inhaber-Entscheidung):** `Kürzung = fakturiert (sevDesk/Deal)
-  − gezahlt_sv (Brief)`. `sql/019` upsertet die 7 Briefe nach
-  `raw.kuerzungsschreiben` und legt `marts.v_kuerzung_sevdesk`,
-  `v_durchsetzung_sevdesk` (nur `plausibel` & Kürzung>0) und `v_kuerzung_sevdesk_diagnose`
-  an. Gegen Live-Daten geprüft: 0825/1683TG=390,51 · 1223/1029TG=185,01 ·
-  1224/1434TG=0 (voll) — die Methode fängt Fehl-Lesungen ab (0225/1506TG:
-  gezahlt>fakturiert → `plausibel=false`).
+  − gezahlt_sv (Brief)`. **Getrennt in drei Migrationen** (damit ein View-Fehler das
+  Laden nicht blockiert / zur Fehler-Bisektion): `sql/019` upsertet die 7 Briefe nach
+  `raw.kuerzungsschreiben`; `sql/020` legt `marts.v_kuerzung_sevdesk` an; `sql/021`
+  `v_durchsetzung_sevdesk` (nur `plausibel` & Kürzung>0) + `v_kuerzung_sevdesk_diagnose`.
+  Gegen Live-Daten geprüft: 0825/1683TG=390,51 · 1223/1029TG=185,01 · 1224/1434TG=0
+  (voll) — die Methode fängt Fehl-Lesungen ab (0225/1506TG: gezahlt>fakturiert →
+  `plausibel=false`).
+- **Deploy-Falle (wichtig):** Coolify-API-Deploys (`/api/v1/deploy`) rekreieren den
+  `etl`-One-Shot NICHT zuverlässig → `migrate` läuft nicht. **Nur der UI-Deploy**
+  („Removing old containers → New container started") führt die Kette aus. Nach Push
+  auf den Deploy-Branch also in der Coolify-UI deployen.
 - **Offen/Ausbau:** nur die erste präzise Scheibe. Weitere Kürzungen heißen anders
   (`Vers Ablehnung SVK`, Versicherer-Namen) oder kamen per Mail → Suchbegriffe im
   Reader erweitern; ambige Fälle (0825/1686TG, 1025/1742TG *open*) im Diagnose-View
