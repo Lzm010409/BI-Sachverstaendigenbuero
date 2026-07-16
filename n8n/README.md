@@ -1,53 +1,48 @@
 # n8n-Workflows (versioniert)
 
-SDK-Quellcode der n8n-Workflows dieses Projekts (Referenz/Versionierung). Angelegt
-werden sie über den n8n-MCP (`create_workflow_from_code`); Änderungen hier + neu
-anlegen/aktualisieren.
+SDK-Quellcode der n8n-Workflows dieses Projekts. Angelegt/aktualisiert über den
+n8n-MCP; hier versioniert.
+
+## Architektur: n8n → HTTP-Ingest → Warehouse
+
+**n8n und die Warehouse-DB sind NICHT im selben Netz** — n8n kann Postgres nicht
+erreichen. Daher schreiben (und lesen) die Workflows über einen kleinen
+**HTTP-Ingest-Dienst** (`etl/ingest/server.ts`), der im Warehouse-Netz läuft
+(Coolify-Service `ingest`, s. `docker-compose.yml`) und über eine öffentliche
+Coolify-Domain erreichbar ist. Auth: `Authorization: Bearer $INGEST_TOKEN`.
+
+**Endpunkte:** `GET /pending/gutachten` (Arbeitsliste), `POST /ingest/gutachten`,
+`POST /ingest/kuerzung`, `GET /health`.
+
+**Einmalige Einrichtung (Coolify + n8n):**
+1. **Coolify:** Service `ingest` deployt mit der Ressource. Eine **Domain** darauf
+   legen (z. B. `ingest.gollenstede.app` → Port 8080) und **Secret `INGEST_TOKEN`**
+   setzen. (In den Workflow-Dateien ist `https://ingest.gollenstede.app` als Basis
+   hinterlegt — bei anderer Domain dort + in den n8n-HTTP-Nodes anpassen.)
+2. **n8n:** Credential **„Warehouse Ingest"** (Typ *Bearer*, Wert = `INGEST_TOKEN`)
+   an den HTTP-Nodes „…(HTTP)". Damit entfällt jeder DB-Zugriff aus n8n.
 
 ## phase4-gutachten-fachwerte.workflow.ts
-**n8n-ID:** `BHUg2f27aafCfI5Q` · **URL:** https://n8n-coolify.gollenstede.app/workflow/BHUg2f27aafCfI5Q
+**n8n-ID:** `BHUg2f27aafCfI5Q` · https://n8n-coolify.gollenstede.app/workflow/BHUg2f27aafCfI5Q
 
-Liest je offenem, geschlossenem Fall (`raw.pipedrive_deals` status=won, ohne Zeile in
-`raw.gutachten_fachwerte`) das Gutachten-PDF aus OneDrive (Microsoft Graph),
-extrahiert den Text, parst die „Zusammenfassung des Gutachtens" (WBW/Restwert/
-Wertminderung/Reparatur/Nutzungsausfall/Beurteilung — DSGVO: nur Zahlen) und
-upsertet nach `raw.gutachten_fachwerte`. Der ETL/`migrate` baut daraus
-`core.fact_gutachten` + Marts (`sql/016`).
-
-**Vor Aktivierung zu verdrahten (in der n8n-UI):**
-1. **Credential „Warehouse Postgres"** (Node „Offene Aktenzeichen" + „Upsert Fachwerte"):
-   auf die Warehouse-DB. **Voraussetzung: n8n erreicht die Warehouse-Postgres** (ggf.
-   n8n-Service ans `WAREHOUSE_NETWORK` hängen, wie der ETL-Container).
-2. **Credential „Microsoft Graph OAuth2"** (Node „Suche Gutachten (Graph)"): OAuth2
-   mit Graph-Scope `Files.Read.All`/`Sites.Read.All`. Der Download-Node braucht keine
-   Auth (Graph liefert eine vorautorisierte `@microsoft.graph.downloadUrl`).
-3. **OneDrive-Pfad prüfen:** Suche läuft über `/me/drive/root/search(q='<ordner>')`
-   (ordner = Aktenzeichen mit `_`, z. B. `0625_1630TG`). Liegen die Gutachten in einer
-   SharePoint-Site statt im persönlichen OneDrive, den Graph-Pfad auf
-   `/sites/{siteId}/drive/...` bzw. die Site-Suche umstellen.
-4. **Testlauf** manuell mit wenigen Fällen; Ergebnis über Metabase prüfen
-   (`select count(*) from core.fact_gutachten`).
-
-Parser-Referenz (identische Logik, getestet): `etl/gutachten/parse-fachwerte.ts`.
+Zeitplan → `GET /pending/gutachten` (offene Fälle) → je Fall Gutachten in OneDrive
+suchen (Graph) → PDF laden → Text extrahieren → Fachwerte-Parser (Code, identisch zu
+`etl/gutachten/parse-fachwerte.ts`) → `POST /ingest/gutachten` → `raw.gutachten_fachwerte`
+→ `core.fact_gutachten` (`sql/016`).
+**Credentials:** Microsoft Graph OAuth2 (`Files.Read.All`) + „Warehouse Ingest".
+**Prüfen:** OneDrive-Pfad (persönlich vs. SharePoint-Site), Testlauf.
 
 ## phase5-kuerzungsschreiben.workflow.ts
-**n8n-ID:** `4JgVp4tCzNHkPCpg` · **URL:** https://n8n-coolify.gollenstede.app/workflow/4JgVp4tCzNHkPCpg
+**n8n-ID:** `4JgVp4tCzNHkPCpg` · https://n8n-coolify.gollenstede.app/workflow/4JgVp4tCzNHkPCpg
 
-Outlook-Trigger (neue Mail mit Anhang, ungelesen) → Anhang→`data` → **Mistral-OCR**
-(`mistral-ocr-latest`, Scan wie Text) → **Mistral-LLM** (`mistral-large-latest`) mit
-Structured-Output-Schema → wenn Kürzungsschreiben & Aktenzeichen erkannt:
-**Pipedrive-Deal suchen → Notiz anlegen** (deine „Liste" am Fall) **+ Upsert nach
-`raw.kuerzungsschreiben`** (→ `core.fact_kuerzungsereignis` + `marts.v_durchsetzung_echt`
-/ `v_kuerzung_echt_je_versicherer`, `sql/018`).
+Outlook-Trigger (neue Mail mit Anhang) → Anhang→`data` → **Mistral-OCR** → **Mistral-
+LLM** (Structured-Output) → wenn Kürzungsschreiben: **Pipedrive-Notiz am Deal** +
+`POST /ingest/kuerzung` → `raw.kuerzungsschreiben` → `core.fact_kuerzungsereignis` +
+`marts.v_durchsetzung_echt` (`sql/017`/`018`).
+**Credentials:** Outlook, Mistral Cloud, Pipedrive (von n8n **auto-zugewiesen**) +
+„Warehouse Ingest".
+**Prüfen:** OCR-Ausgabefeld (Prompt bekommt robust den ganzen OCR-Output), Aktenzeichen-
+Treffer in Pipedrive.
 
-**Credentials:** Outlook, Mistral Cloud, Pipedrive sind von n8n **auto-zugewiesen**.
-**Noch zu verdrahten:** Credential **„Warehouse Postgres"** (Node „Upsert Warehouse")
-+ n8n↔Warehouse-Konnektivität (wie Phase 4).
-
-**Vor Aktivierung prüfen (Testlauf):**
-- OCR-Ausgabefeld: der LLM-Prompt bekommt `{{ JSON.stringify($json) }}` (robust ggü.
-  Feldname). Bei Bedarf gezielt auf das Textfeld der Mistral-OCR zeigen.
-- Aktenzeichen-Treffer in Pipedrive (exact match auf Deal-Titel).
-
-**Noch offen (nächster Ausbau):** Backfill über die OneDrive-Fallordner (zweiter
-Trigger, gleiche Verarbeitung — Kürzungsschreiben, die nur im Ordner liegen).
+**Nächster Ausbau:** Kürzungsschreiben-Backfill über die OneDrive-Fallordner (zweiter
+Trigger, gleiche Verarbeitung).

@@ -89,17 +89,19 @@ committet). **Zuerst diese Datei + `CLAUDE.md` lesen.**
   **Die echte Kürzung braucht das Kürzungsschreiben** → Strategie in
   `docs/strategie-kuerzung-und-pdf.md`.
 
-## n8n-Workflows (Phase 4 & 5, angelegt — Verdrahtung offen)
+## n8n-Workflows (Phase 4 & 5) — via HTTP-Ingest (n8n ≠ Warehouse-Netz)
 
-Code + Anleitung: **`n8n/`**. Beide sind validiert in n8n angelegt; jeweils
-**„Warehouse Postgres"-Credential + n8n↔Warehouse-Konnektivität** verdrahten, dann
-Testlauf.
-- **Phase 4 — Gutachten-Fachwerte** (`BHUg2f27aafCfI5Q`): OneDrive-Gutachten → Graph
-  → PDF → Parser → `raw.gutachten_fachwerte`. Credentials: Graph OAuth2 + Postgres.
-- **Phase 5 — Kürzungsschreiben** (`4JgVp4tCzNHkPCpg`): Outlook-Anhang → **Mistral-OCR
-  + LLM** → Pipedrive-Notiz + `raw.kuerzungsschreiben`. Outlook/Mistral/Pipedrive
-  **auto-zugewiesen**; nur Postgres offen. Schaltet `marts.v_durchsetzung_echt` frei.
-  Nächster Ausbau: Backfill über OneDrive-Fallordner (zweiter Trigger).
+n8n erreicht die DB nicht → Schreiben/Lesen über den **HTTP-Ingest-Dienst**
+`etl/ingest/server.ts` (Coolify-Service `ingest`, langlaufend, im Warehouse-Netz,
+Bearer-gesichert). Endpunkte: `GET /pending/gutachten`, `POST /ingest/gutachten`,
+`POST /ingest/kuerzung`, `/health`. Lokal end-to-end getestet. Details: **`n8n/README.md`**.
+- **Phase 4** (`BHUg2f27aafCfI5Q`): Zeitplan → pending → OneDrive-Gutachten (Graph) →
+  Parser → `POST /ingest/gutachten`.
+- **Phase 5** (`4JgVp4tCzNHkPCpg`): Outlook-Anhang → **Mistral-OCR + LLM** →
+  Pipedrive-Notiz + `POST /ingest/kuerzung` → `marts.v_durchsetzung_echt`.
+- **Einrichtung (Inhaber):** Coolify — Domain auf Service `ingest` (Port 8080) +
+  Secret `INGEST_TOKEN`. n8n — Credential „Warehouse Ingest" (Bearer) + Graph OAuth2.
+  Dann Testlauf. Kein DB-Zugriff aus n8n nötig.
 
 ## NÄCHSTE SCHRITTE (Auswahl beim Neustart)
 

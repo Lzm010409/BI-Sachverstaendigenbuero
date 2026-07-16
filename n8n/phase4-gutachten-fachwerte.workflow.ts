@@ -1,19 +1,19 @@
 import { workflow, node, trigger, splitInBatches, nextBatch, newCredential, expr } from '@n8n/workflow-sdk';
 
+// Ingest-Basis-URL (Coolify-Domain des ingest-Dienstes). Ggf. anpassen.
+const INGEST = 'https://ingest.gollenstede.app';
+
 const scheduleTrigger = trigger({
   type: 'n8n-nodes-base.scheduleTrigger', version: 1.3,
   config: { name: 'Täglich 03:00', parameters: { rule: { interval: [{ field: 'days', daysInterval: 1, triggerAtHour: 3 }] } } }
 });
 
 const getPending = node({
-  type: 'n8n-nodes-base.postgres', version: 2.6,
+  type: 'n8n-nodes-base.httpRequest', version: 4.4,
   config: {
-    name: 'Offene Aktenzeichen',
-    parameters: {
-      operation: 'executeQuery',
-      query: "SELECT az AS aktenzeichen, replace(az,'/','_') AS ordner, '20'||substring(az from 3 for 2) AS jahr, substring(az from 1 for 2) AS monat FROM (SELECT upper(regexp_replace(payload->>'title','\\s','','g')) AS az, payload->>'status' AS status FROM raw.pipedrive_deals) d WHERE d.status='won' AND d.az ~ '^[0-9]{4}/[0-9]+TG$' AND NOT EXISTS (SELECT 1 FROM raw.gutachten_fachwerte f WHERE f.aktenzeichen=d.az) LIMIT 25"
-    },
-    credentials: { postgres: newCredential('Warehouse Postgres') }
+    name: 'Offene Aktenzeichen (HTTP)',
+    parameters: { method: 'GET', url: INGEST + '/pending/gutachten', authentication: 'genericCredentialType', genericAuthType: 'httpBearerAuth' },
+    credentials: { httpBearerAuth: newCredential('Warehouse Ingest') }
   }
 });
 
@@ -23,11 +23,7 @@ const searchFile = node({
   type: 'n8n-nodes-base.httpRequest', version: 4.4,
   config: {
     name: 'Suche Gutachten (Graph)',
-    parameters: {
-      method: 'GET',
-      url: expr("https://graph.microsoft.com/v1.0/me/drive/root/search(q='{{ $json.ordner }}')"),
-      authentication: 'genericCredentialType', genericAuthType: 'oAuth2Api'
-    },
+    parameters: { method: 'GET', url: expr("https://graph.microsoft.com/v1.0/me/drive/root/search(q='{{ $json.ordner }}')"), authentication: 'genericCredentialType', genericAuthType: 'oAuth2Api' },
     credentials: { oAuth2Api: newCredential('Microsoft Graph OAuth2') }
   }
 });
@@ -48,13 +44,7 @@ return { json: { downloadUrl: chosen['@microsoft.graph.downloadUrl'], name: chos
 
 const downloadPdf = node({
   type: 'n8n-nodes-base.httpRequest', version: 4.4,
-  config: {
-    name: 'PDF laden',
-    parameters: {
-      method: 'GET', url: expr('{{ $json.downloadUrl }}'), authentication: 'none',
-      options: { response: { response: { responseFormat: 'file', outputPropertyName: 'data' } } }
-    }
-  }
+  config: { name: 'PDF laden', parameters: { method: 'GET', url: expr('{{ $json.downloadUrl }}'), authentication: 'none', options: { response: { response: { responseFormat: 'file', outputPropertyName: 'data' } } } } }
 });
 
 const extractPdf = node({
@@ -89,16 +79,17 @@ return { json: { aktenzeichen: az, payload, quelle_datei: $('Gutachten-PDF wähl
   }
 });
 
-const upsert = node({
-  type: 'n8n-nodes-base.postgres', version: 2.6,
+const ingestPost = node({
+  type: 'n8n-nodes-base.httpRequest', version: 4.4,
   config: {
-    name: 'Upsert Fachwerte',
+    name: 'An Warehouse (HTTP)',
     parameters: {
-      operation: 'upsert', schema: { __rl: true, mode: 'name', value: 'raw' },
-      table: { __rl: true, mode: 'name', value: 'gutachten_fachwerte' },
-      columns: { mappingMode: 'autoMapInputData', value: null, matchingColumns: ['aktenzeichen'] }
+      method: 'POST', url: INGEST + '/ingest/gutachten',
+      authentication: 'genericCredentialType', genericAuthType: 'httpBearerAuth',
+      sendBody: true, contentType: 'json', specifyBody: 'json',
+      jsonBody: expr('{{ { aktenzeichen: $json.aktenzeichen, payload: $json.payload, quelle_datei: $json.quelle_datei } }}')
     },
-    credentials: { postgres: newCredential('Warehouse Postgres') }
+    credentials: { httpBearerAuth: newCredential('Warehouse Ingest') }
   }
 });
 
@@ -106,5 +97,5 @@ export default workflow('phase4-gutachten-fachwerte', 'Phase 4 — Gutachten-Fac
   .add(scheduleTrigger)
   .to(getPending)
   .to(loop.onEachBatch(
-    searchFile.to(pickFile).to(downloadPdf).to(extractPdf).to(parseFachwerte).to(upsert).to(nextBatch(loop))
+    searchFile.to(pickFile).to(downloadPdf).to(extractPdf).to(parseFachwerte).to(ingestPost).to(nextBatch(loop))
   ));

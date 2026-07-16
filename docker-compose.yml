@@ -49,6 +49,29 @@ services:
       - warehouse
     restart: "no"
 
+  # Ingest-Dienst (langlaufend): nimmt von n8n extrahierte Datensätze per HTTP
+  # entgegen und upsertet sie in raw. n8n ist NICHT im Warehouse-Netz und kann
+  # Postgres nicht direkt erreichen — dieser Dienst schon. In Coolify eine Domain
+  # (z. B. ingest.gollenstede.app) auf Port 8080 legen; INGEST_TOKEN als Secret.
+  ingest:
+    build:
+      context: .
+      dockerfile: docker/migrate.Dockerfile
+    command: ["npx", "tsx", "etl/ingest/server.ts"]
+    environment:
+      WAREHOUSE_DB_HOST: ${WAREHOUSE_DB_HOST}
+      WAREHOUSE_DB_PORT: ${WAREHOUSE_DB_PORT:-5432}
+      WAREHOUSE_DB_NAME: ${WAREHOUSE_DB_NAME:-warehouse}
+      ETL_DB_USER: ${ETL_DB_USER:-etl}
+      ETL_DB_PASSWORD: ${ETL_DB_PASSWORD}
+      INGEST_TOKEN: ${INGEST_TOKEN}
+      INGEST_PORT: ${INGEST_PORT:-8080}
+    expose:
+      - "8080"
+    networks:
+      - warehouse
+    restart: unless-stopped
+
   # Golden-Check (read-only): assertet core.fact_ausbuchung gegen die 20
   # handgeprueften Deals in fixtures/golden-deals.json. Kein Deploy-Gate.
   # Manuell/als Scheduled Task:  docker compose run --rm golden
