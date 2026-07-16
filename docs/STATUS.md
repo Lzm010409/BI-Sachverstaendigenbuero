@@ -73,10 +73,15 @@ committet). **Zuerst diese Datei + `CLAUDE.md` lesen.**
   - **Ausbuchung** = sevDesk-Beleg „Forderungsverlust <Aktenzeichen>" (eigene, voll-
     ständige Quelle). `sql/012` raw + `etl/sevdesk/extract-vouchers.ts` (DSGVO:
     supplier verworfen) + `sql/013` `core.fact_forderungsverlust`.
-  - **Durchsetzungsquote messbar:** `marts.v_durchsetzung` = 1 − ΣAusbuchung/ΣKürzung
-    (+ `v_durchsetzung_diagnose`). Lokal verifiziert (Kürzung 200/Ausb. 40 → 80 %).
-  **Nächstes:** Beleg-Betragsfeld (sumGross/sumNet) an echtem Sample bestätigen;
-  `extract:vouchers` deployen; an Prod-Daten (Metabase) prüfen.
+  **DEPLOYT & an Prod-Daten geprüft (2026-07-16, Deploy-Branch + Coolify).**
+  **Kritischer Befund:** `sumGross − paidAmount` misst die Kürzung NICHT — sevDesk
+  bucht die Rechnung bei Abschluss voll (Zahlung + Ausbuchungsbuchung), offener
+  Betrag ~0 trotz realer Abschreibung (506/515 „Kürzungen" waren < 0,10 €). Korrektur
+  `sql/014`: **Ausbuchung aus den Forderungsverlust-Belegen** (`fact_forderungsverlust`,
+  89 Fälle / 34 k€) ist die zuverlässige Hauptlieferung → `v_ausbuchung_je_versicherer`
+  / `v_ausbuchung_monat` (Leitfrage 5). Kürzungs-Views mit Bagatellgrenze entschärft.
+  **Die echte Kürzung braucht das Kürzungsschreiben** → Strategie in
+  `docs/strategie-kuerzung-und-pdf.md`.
 
 ## NÄCHSTE SCHRITTE (Auswahl beim Neustart)
 
