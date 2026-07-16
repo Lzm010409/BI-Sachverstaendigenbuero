@@ -15,7 +15,7 @@
 -- --- Ausbuchung je Versicherer (Leitfrage 5) --------------------------------
 -- Versicherer über den Fall (fact_ausbuchung.org_id → dim_organisation). Namen sind
 -- dirty (Phase 4/autoiXpert liefert später die saubere Versicherer-Zuordnung).
-CREATE OR REPLACE VIEW marts.v_ausbuchung_je_versicherer AS
+CREATE OR REPLACE VIEW marts.v_forderungsverlust_je_versicherer AS
 WITH fv AS (
   SELECT aktenzeichen, sum(forderungsverlust_brutto) AS ausbuchung, count(*) AS belege
   FROM core.fact_forderungsverlust
@@ -33,7 +33,7 @@ LEFT JOIN core.dim_organisation  dorg ON dorg.org_id = fa.org_id AND dorg.typ = 
 GROUP BY 1;
 
 -- --- Ausbuchung je Monat (Zahlungsausfall-Zeitreihe) ------------------------
-CREATE OR REPLACE VIEW marts.v_ausbuchung_monat AS
+CREATE OR REPLACE VIEW marts.v_forderungsverlust_monat AS
 SELECT
   date_trunc('month', beleg_datum)::date AS monat,
   count(*)                                AS anzahl_belege,
@@ -46,7 +46,9 @@ GROUP BY 1;
 -- >= 1 € gilt als echte Kürzung. HINWEIS: diese Views bleiben nur belastbar, sobald
 -- die Kürzung aus dem Kürzungsschreiben kommt; aus der Rechnungsdifferenz sind sie
 -- weitgehend leer/irreführend (s. Befund oben).
-CREATE OR REPLACE VIEW marts.v_kuerzung_je_versicherer AS
+-- DROP nötig: CREATE OR REPLACE darf keine Spalte entfernen (kuerzungsquote raus).
+DROP VIEW IF EXISTS marts.v_kuerzung_je_versicherer;
+CREATE VIEW marts.v_kuerzung_je_versicherer AS
 SELECT
   COALESCE(NULLIF(trim(versicherer), ''), '(unbekannt)') AS versicherer,
   count(*)                                          AS anzahl_rechnungen,
@@ -63,7 +65,8 @@ GROUP BY 1;
 -- dokumentiert, dass die Durchsetzungsquote aus Rechnungsdifferenz vs. Beleg NICHT
 -- messbar ist (offener Betrag ~0 trotz realer Ausbuchung). Echte Durchsetzungsquote
 -- erst mit Kürzungsschreiben-Quelle.
-CREATE OR REPLACE VIEW marts.v_durchsetzung AS
+DROP VIEW IF EXISTS marts.v_durchsetzung;
+CREATE VIEW marts.v_durchsetzung AS
 WITH kuerzung AS (
   SELECT aktenzeichen, max(versicherer) AS versicherer, sum(kuerzung_betrag) AS kuerzung
   FROM core.fact_kuerzung

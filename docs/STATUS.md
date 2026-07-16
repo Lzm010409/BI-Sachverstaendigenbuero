@@ -78,8 +78,8 @@ committet). **Zuerst diese Datei + `CLAUDE.md` lesen.**
   bucht die Rechnung bei Abschluss voll (Zahlung + Ausbuchungsbuchung), offener
   Betrag ~0 trotz realer Abschreibung (506/515 „Kürzungen" waren < 0,10 €). Korrektur
   `sql/014`: **Ausbuchung aus den Forderungsverlust-Belegen** (`fact_forderungsverlust`,
-  89 Fälle / 34 k€) ist die zuverlässige Hauptlieferung → `v_ausbuchung_je_versicherer`
-  / `v_ausbuchung_monat` (Leitfrage 5). Kürzungs-Views mit Bagatellgrenze entschärft.
+  89 Fälle / 34 k€) ist die zuverlässige Hauptlieferung → `v_forderungsverlust_je_versicherer`
+  / `v_forderungsverlust_monat` (Leitfrage 5). Kürzungs-Views mit Bagatellgrenze entschärft.
   **Die echte Kürzung braucht das Kürzungsschreiben** → Strategie in
   `docs/strategie-kuerzung-und-pdf.md`.
 
