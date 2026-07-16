@@ -29,3 +29,25 @@ upsertet nach `raw.gutachten_fachwerte`. Der ETL/`migrate` baut daraus
    (`select count(*) from core.fact_gutachten`).
 
 Parser-Referenz (identische Logik, getestet): `etl/gutachten/parse-fachwerte.ts`.
+
+## phase5-kuerzungsschreiben.workflow.ts
+**n8n-ID:** `4JgVp4tCzNHkPCpg` · **URL:** https://n8n-coolify.gollenstede.app/workflow/4JgVp4tCzNHkPCpg
+
+Outlook-Trigger (neue Mail mit Anhang, ungelesen) → Anhang→`data` → **Mistral-OCR**
+(`mistral-ocr-latest`, Scan wie Text) → **Mistral-LLM** (`mistral-large-latest`) mit
+Structured-Output-Schema → wenn Kürzungsschreiben & Aktenzeichen erkannt:
+**Pipedrive-Deal suchen → Notiz anlegen** (deine „Liste" am Fall) **+ Upsert nach
+`raw.kuerzungsschreiben`** (→ `core.fact_kuerzungsereignis` + `marts.v_durchsetzung_echt`
+/ `v_kuerzung_echt_je_versicherer`, `sql/018`).
+
+**Credentials:** Outlook, Mistral Cloud, Pipedrive sind von n8n **auto-zugewiesen**.
+**Noch zu verdrahten:** Credential **„Warehouse Postgres"** (Node „Upsert Warehouse")
++ n8n↔Warehouse-Konnektivität (wie Phase 4).
+
+**Vor Aktivierung prüfen (Testlauf):**
+- OCR-Ausgabefeld: der LLM-Prompt bekommt `{{ JSON.stringify($json) }}` (robust ggü.
+  Feldname). Bei Bedarf gezielt auf das Textfeld der Mistral-OCR zeigen.
+- Aktenzeichen-Treffer in Pipedrive (exact match auf Deal-Titel).
+
+**Noch offen (nächster Ausbau):** Backfill über die OneDrive-Fallordner (zweiter
+Trigger, gleiche Verarbeitung — Kürzungsschreiben, die nur im Ordner liegen).
