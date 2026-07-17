@@ -139,7 +139,24 @@ OneDrive läuft über SharePoint; die Session hat **keinen** M365-Datei-Zugriff
   ab. Zwei Bugs unterwegs gefixt: crashender Ingest-Container vergiftete den Deploy
   (entfernt); Spaltennamen-Mismatch `fv.ausbuchung`/`ausgebucht` ließ `CREATE VIEW`
   in `021` scheitern (Bisektion über 019/020/021).
-- **Offen (Kürzung):** Suche über `Schadenzahlung` hinaus erweitern.
+- **ERWEITERT (2026-07-17) — `sql/024`, wartet auf Deploy-Freigabe:** Reader jetzt
+  über **6 Suchbegriffe** (Schadenzahlung/Kürzung/Regulierung/Ablehnung/Abrechnung/
+  SVK) + **Dateiname-Whitelist**. Wichtiger Befund: OneDrive-Suche matcht auch
+  Datei-INHALT → generische Terme trafen **1528** PDFs (Abtretungen/Widerrufe); der
+  Whitelist-Filter (`Kandidaten`-Node) auf echte Versicherer-Schreiben schneidet auf
+  **123 Kandidaten → 67 Kürzungsschreiben → 63 verwertbare Fälle**. `Stellungnahme`
+  (unsere Erwiderung, kein Zahlbetrag) bewusst raus (eigene LF3-Quelle). Execution
+  `1554241`. Datenqualität: `sachverstaendigenkosten` kommt mal Zahl, mal Objekt
+  `{gezahlt,…}` → auf `gezahlt_sv` normalisiert.
+  - **Coverage-Realität:** von den 63 sind nur **17 in `fact_ausbuchung`** (Pipedrive),
+    davon **13 mit gezahlt_sv → sevDesk-Methode berechenbar** (+ die 7 aus `sql/019`).
+    Die übrigen **46 sind vor-Pipedrive-Altfälle** (2019–2024) ohne sevDesk-Deal →
+    nur über den **brief-expliziten `kuerzungsbetrag`** (Versicherer-Behauptung,
+    Domänenmodell) abbildbar. Daher speichert `sql/024` **beide** Felder:
+    `sachverstaendigenkosten` (50×, sevDesk-Methode) **und** `kuerzungsbetrag` (39×,
+    echt-Views `v_durchsetzung_echt`/`v_kuerzung_echt_je_versicherer`).
+  - **Offene Methodenfrage an Inhaber:** nur sevDesk-berechenbare Fälle laden, oder
+    auch die 46 Altfälle per brief-`kuerzungsbetrag` (mehr Coverage, mischt Methoden)?
 
 ### Phase 4 (Gutachten-Fachwerte) — Reader gebaut, 11 Fälle live (2026-07-16)
 
