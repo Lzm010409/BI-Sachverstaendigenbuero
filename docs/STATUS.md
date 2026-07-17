@@ -147,14 +147,29 @@ Kürzungs**grund** (LF2) kommt aus dem Pipedrive-Ausbuchungsgrund (69 Grundhonor
   `raw.sevdesk_invoice_bookings`, `sql/032` `core.fact_zahlung`/`fact_rechnung_zahlung`
   + marts `v_zahlungsverlauf`, `v_durchsetzung_zahlung` (+ je Versicherer/Anwalt/Grund).
   In die Deploy-Kette (docker-compose) nach extract-vouchers eingehängt.
-- **Backfill = automatisch beim nächsten UI-Deploy** (Extractor läuft über ALLE ~994
-  Rechnungen). Danach verifizieren (mbq.py) + die alten OCR-Kürzungs-Cards/Views durch
-  die zahlungsbasierten ersetzen.
-- **OCR-Abrechnungsschreiben kann deaktiviert werden:** Betrag+Quote liefert der
-  Zahlungsweg (breiter/zuverlässiger als 41 Briefe), Grund+Haftungsquote der Pipedrive-
-  Ausbuchungsgrund. Bereits geladene Briefdaten bleiben (schaden nicht). Einzig ein
-  itemisierter Kürzungsgrund je Position wäre nur im Brief — aktuell nicht gebraucht.
-  (Stellungnahme-Schreiben LF3 sind eine SEPARATE, noch offene Quelle.)
+- **DEPLOYT & VERIFIZIERT (2026-07-17, Commit 6104f6c):** Backfill über alle Rechnungen
+  gelaufen → **1211 Buchungen / 904 Rechnungen**; `v_durchsetzung_zahlung` = **183
+  belastbare Kürzungsfälle** (75 k€ Kürzung, 13 k€ Ausbuchung) statt 12–18 aus der OCR.
+  Sanity 0824/1312TG: erste Zahlung 300 € · Kürzung 707,94 € · ausgebucht 707,94 € ·
+  0 % durchgesetzt ✓. Je Versicherer jetzt statistisch (HUK n=47/82 %, Busch n=68/87 %).
+- **Perf-Fix `sql/034`:** `v_durchsetzung_zahlung` brauchte ~39s (Nested-Loop auf
+  fact_ausbuchung/regexp) → `fa AS MATERIALIZED`-CTE → **~2s**, gleiches Ergebnis.
+  **Wartet auf Deploy** (bis dahin sind die Cards korrekt, aber langsam).
+- **Dashboards umgebaut (live)** auf die zahlungsbasierten Views
+  (`scratchpad/rebuild_kuerzung_cards.py`): **Dashboard 2** (Durchsetzung & Kürzungen)
+  = Kürzung/Durchsetzung je Versicherer, Quote-Balken (n≥3), Fall-Tabelle (183),
+  Kürzung je Grund. **Dashboard 8** Anwalt-Cards 64/65/66 = Kürzung/Durchsetzung je
+  Anwalt (×Versicherer), Warnbanner durch „zahlungsbasiert, 183 Fälle" ersetzt.
+- **OCR BLEIBT AKTIV — liefert künftig den GRUND** (Inhaber-Entscheidung): Betrag/Quote
+  aus der Zahlung, **Kürzungsgrund aus dem Schreiben**. `sql/033`: `fact_kuerzungsereignis`
+  + Spalte `kuerzungsgrund`, `v_durchsetzung_zahlung_grund` verknüpft Zahlung↔Brief-Grund
+  übers Aktenzeichen. Live-WF `4JgVp4tCzNHkPCpg` „Information Extractor" um Feld
+  `kuerzungsgrund` (kurze Kategorie, kein Freitext) erweitert **und vom Inhaber
+  publiziert** → neue Schreiben tragen den Grund; der Schreib-Knoten legt die volle
+  LLM-Ausgabe als `payload` ab, daher fließt er automatisch. Bestehende 73 Briefe
+  brauchen Re-OCR für den Grund. (Stellungnahme-Schreiben LF3 = SEPARATE offene Quelle.)
+- **Backlog:** Versicherer-Namen kanonisieren (Pipedrive-Org „HUK" vs „HUK Coburg Vers.
+  AG" vs „ALLIANZ"/„Allianz Versicherung AG") — betrifft die Gruppierung je Versicherer.
 
 ### Dashboard 8 „7 · Anwälte × Versicherer" + Kürzungsquellen-Befund (2026-07-17)
 
