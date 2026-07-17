@@ -107,12 +107,27 @@ Versicherer noch leer ist → teils bessere Abdeckung als der Versicherer).
 - Feld-Doku korrigiert: `docs/field-mapping.json` (label „Rechtsanwalt", confirmed) →
   `fields.generated.ts` regeneriert (`NUTZUNGSAUSFALL_TAGESSATZ` → `RECHTSANWALT`;
   Konstante war ungenutzt, Nutzungsausfall kommt aus den Gutachten-PDFs, nicht hier).
-- **NACH DEPLOY offen:** (1) echte Coverage messen + tatsächlich referenzierte
-  Kanzleien gegenprüfen (kein Privat-Leak); (2) Dashboard „Auftraggeber/Anwälte (LF4)"
-  + Versicherer×Anwalt-Matrix bauen (Cards erst nach Deploy, da `metabase_ro` das
-  Anwalt-Feld erst über die neue core-View sieht — `raw` bleibt gesperrt).
-- **Dublette bekannt:** „Beumer & Tappert" vs „Beumer und Tappert" (Schreibvarianten
-  derselben Kanzlei) → später dedupen.
+**DEPLOYT & Dashboard live (2026-07-17):** `sql/029` deployt (Commit 9d61398).
+Coverage: **Anwalt 65 % (651/1001), Versicherer 74 %** — bei jungen Fällen Anwalt oft
+gesetzt, Versicherer noch nicht. **Dashboard 7 „6 · Auftraggeber & Anwälte (LF4)"**
+gebaut (4 Cards, Inline-SQL gegen `core.*`, `scratchpad/build_anwalt_dashboard.py`):
+Auftraggeber-Ranking (Umsatz/Fälle/won/Forderungsverlust je Anwalt), Umsatz-Balken,
+Fallzahl-Balken, **Versicherer×Anwalt Top-Kombinationen**. Top-Auftraggeber:
+RA Claudia Busch (248 Fälle, 302 k€), RA Philipp Nadler (137, 160 k€), Peters
+Rechtsanwälte (68, 85 k€).
+
+- **DSGVO-Klärung (Inhaber):** Die „Privatpersonen"-Namen im Anwalt-Feld sind
+  **durchweg Rechtsanwälte** (Einzelanwälte unter Klarnamen, öffentlich auffindbar),
+  KEINE Geschädigten → Klartext erlaubt. Daher **`sql/030`**: die Kanzlei-Namens-
+  Whitelist aus `sql/029` wieder entfernt, `dim_anwalt` = die vom Feld tatsächlich
+  referenzierten Orgs (Name im Klartext). **`sql/030` wartet auf Coolify-UI-Deploy**
+  (Dashboard nutzt bereits Inline-SQL → schon korrekt; Deploy gleicht nur die
+  deployten Views `dim_anwalt`/`v_anwalt`/`v_versicherer_x_anwalt` an).
+  ⚠️ `sql/029` NICHT nachträglich editieren — der Migrations-Runner ist checksum-
+  basiert und bricht sonst ab; Korrekturen immer als neue Migration.
+- **Backlog:** Kanzlei-Dubletten dedupen (z. B. „Beumer & Tappert" / „…und Tappert",
+  „Wittenberg & Collegen" / „…und Kollegen"); Versicherer-Namen kanonisieren
+  (Pipedrive-Org „HUK" vs „HUK Coburg Vers. AG" vs Brief „HUK…").
 
 ## Erledigt (deployt & live verifiziert)
 
