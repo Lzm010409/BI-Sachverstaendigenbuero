@@ -168,8 +168,15 @@ Kürzungs**grund** (LF2) kommt aus dem Pipedrive-Ausbuchungsgrund (69 Grundhonor
   publiziert** → neue Schreiben tragen den Grund; der Schreib-Knoten legt die volle
   LLM-Ausgabe als `payload` ab, daher fließt er automatisch. Bestehende 73 Briefe
   brauchen Re-OCR für den Grund. (Stellungnahme-Schreiben LF3 = SEPARATE offene Quelle.)
-- **Backlog:** Versicherer-Namen kanonisieren (Pipedrive-Org „HUK" vs „HUK Coburg Vers.
-  AG" vs „ALLIANZ"/„Allianz Versicherung AG") — betrifft die Gruppierung je Versicherer.
+- **Versicherer-Namen kanonisiert (`sql/035`, wartet auf Deploy):** `core.dim_versicherer_kanon`
+  bildet 158 Rohnamen per Namensmuster auf ~40 Marken ab (HUK-COBURG/Allianz/…, Aioi vs
+  Baloise sauber getrennt). `v_durchsetzung_zahlung`/`v_forderungsverlust_je_versicherer`/
+  `v_versicherer_x_anwalt` darauf umgestellt; Rollups erben es.
+- **READMEs je Projektteil** angelegt (Root + `sql/`, `etl/`+4 Unterordner, `scripts/`,
+  `fixtures/`, `docker/`, `docs/`, `scratchpad/`; `n8n/` bestand). Erklären Funktion,
+  Mechanik und Gotchas des jeweiligen Teils.
+- **Offener Deploy:** `sql/033` (Brief-Grund), `sql/034` (Perf 39s→2s), `sql/035` (Kanon)
+  sind committet auf `emf5b8`, aber noch nicht deployt → ein UI-Deploy macht sie live.
 
 ### Dashboard 8 „7 · Anwälte × Versicherer" + Kürzungsquellen-Befund (2026-07-17)
 
