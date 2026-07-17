@@ -165,6 +165,25 @@ OneDrive läuft über SharePoint; die Session hat **keinen** M365-Datei-Zugriff
   - **Offen/Ausbau:** `Stellungnahme`-Schreiben (108×) als eigene LF3-Quelle
     (setze ich Kürzungen per Stellungnahme durch?) noch nicht erfasst.
 
+### Phase 4 (Gutachten 2026) — M365-Direktroute, `sql/025`, wartet auf Deploy-Freigabe (2026-07-17)
+
+Der M365-Connector zeigt inzwischen **SharePoint-Tools** (`sharepoint_search`,
+`read_resource`) — vorher nur `get_me`. Damit lassen sich Gutachten-PDFs **direkt** aus
+SharePoint lesen (voller Textlayer, **kein OCR, kein n8n**). Genutzt, um die 2026-Lücke
+des Volllaufs (`sql/023`) zu schließen.
+- **150 offene 2026-won-Fälle** (in `fact_ausbuchung`, nicht in `fact_gutachten`) geprüft:
+  **120 mit Gutachten/Bewertung gefunden & geparst** (86 Reparatur-, 26 Totalschaden,
+  8 Bewertung), 30 ohne abgelegtes Gutachten (nur Rechnung/Werkstatt/WBW — sehr junge Fälle).
+- **Extraktion über isolierte Subagenten** (Suche → `read_resource` → Zusammenfassung
+  parsen → nur 9 Whitelist-Zahlenfelder). DSGVO: VIN/Kennzeichen/Klarnamen NIE persistiert.
+  Validierung: 120/120 mit exakt den 9 Keys, alle netto×1,19≈brutto, jede Totalschaden-
+  Beurteilung deckt sich mit reparaturkosten_brutto>WBW.
+- **Lernpunkt Concurrency:** 14 Subagenten parallel drosseln MS-Graph (429, 50 RPM shared).
+  Fix: max. ~4 gleichzeitig, sequentiell je Agent, nie `sleep` (Harness bricht ab),
+  bei 429 skip-and-retry. Damit sauber durchgelaufen.
+- **`sql/025`** = 120 Fälle, Upsert `raw.gutachten_fachwerte`. Committet; **wartet auf
+  Deploy-Freigabe** (FF auf Deploy-Branch). Danach `fact_gutachten` ≈ 471+120 = 591.
+
 ### Phase 4 (Gutachten-Fachwerte) — Reader gebaut, 11 Fälle live (2026-07-16)
 
 Kein Ingest mehr; **n8n-Reader** liest je Aktenzeichen aus OneDrive und lädt via
