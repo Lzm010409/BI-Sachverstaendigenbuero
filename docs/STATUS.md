@@ -56,6 +56,35 @@ Warehouse = database id **2**), Sammlung **„BI — Kfz-Sachverständigenbüro"
 **DSGVO eingehalten:** nur core/marts-Views (kein raw); Ort-Chart auf ≥3 Fälle
 aggregiert (kein identifizierender Einzelfall Ort+Kleinstzahl).
 
+### Durchsetzungsquote ehrlich gemacht (`sql/028`, 2026-07-17)
+
+**Befund auf Inhaber-Nachfrage:** Die Durchsetzungsquote war **nicht belastbar**.
+Ursache = `1 − Ausbuchung/Kürzung` mit `COALESCE(ausbuchung,0)` → fehlender
+Forderungsverlust-Beleg wurde zu „100 % durchgesetzt". Datenlage: **70 Schreiben
+(alle aus OneDrive-Backfill; Live-WF `4JgVp4tCzNHkPCpg` hat bisher 0 geliefert —
+pollt stündlich, findet keine neue Mail-Post)**, 39 mit Kürzungsbetrag, aber nur
+**5** Aktenzeichen mit Overlap zu den 89 Forderungsverlust-Belegen → 22/25
+Versicherer-Zeilen zeigten Schein-100 %. 46 sind Vor-Pipedrive-Altfälle (können gar
+keinen Beleg haben). sevDesk-Methode zusätzlich mit Lesefehlern (Negativ-Quoten
+bei Ausbuchung>Kürzung, `gezahlt_sv=0`, Extremwert 0525/1568TG DEVK 5.407 €).
+
+**Fix `sql/028` (belastbar = `won` in `fact_ausbuchung`, Ausgang final):**
+- `v_durchsetzung_echt`: Quote nur über abgeschlossene Fälle (12 statt 39); Altfälle
+  fallen aus der Quote (bleiben als Betrag in `v_kuerzung_echt_je_versicherer`).
+- `v_durchsetzung_sevdesk`: zusätzlich `won` + `gezahlt_sv>0` + Kürzung>1 € +
+  Ausbuchung≤Kürzung (keine Negativ-Quoten mehr) → 10 saubere Fälle.
+- `v_kuerzung_sevdesk_diagnose`: um Befunde erweitert (won offen, gezahlt_sv=0,
+  inkonsistent). Verteilung: 38 Altfall · 10 verwertbar · 4 keine Kürzung · 2
+  inkonsistent · je 1 won-offen/gezahlt_sv=0/Fehl-Lesung.
+- **Dashboard 1 Cards live angepasst** (Inline-SQL gegen `core.*`, sofort korrekt
+  vor Deploy): Card 42/43 als **Tabelle mit sichtbarem n**, Card 44 erweiterte
+  Diagnose. `scratchpad/update_durchsetzung_cards.py`.
+- **`sql/028` committet — wartet auf Coolify-UI-Deploy** (dann matcht die deployed
+  Marts-Schicht die Cards). **Empfehlung an Inhaber:** für Entscheidungen die
+  Forderungsverlust-Views (LF5, 89 echte Belege) nutzen; Durchsetzungsquote erst
+  aussagekräftig, wenn Kürzung↔Ausbuchung fallweise breiter überlappen (nicht durch
+  bloßes Warten auf den Live-WF, sondern durch Abdeckung beider Seiten).
+
 ## Erledigt (deployt & live verifiziert)
 
 - **Phase 0–2** — Fundament, Infra, Pipedrive→`fact_ausbuchung`→marts. **1001 Deals** live.
