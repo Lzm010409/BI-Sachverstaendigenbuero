@@ -1,0 +1,50 @@
+WITH k AS (
+SELECT name,
+  CASE
+    WHEN name ~* 'provinzial'            THEN 'Provinzial'
+    WHEN name ~* 'huk'                   THEN 'HUK-COBURG'
+    WHEN name ~* 'allianz'               THEN 'Allianz'
+    WHEN name ~* 'adac'                  THEN 'ADAC'
+    WHEN name ~* '\maioi\M|\maloi\M|nissay' THEN 'Aioi Nissay Dowa'
+    WHEN name ~* '\maxa\M|^axa'          THEN 'AXA'
+    WHEN name ~* 'devk'                  THEN 'DEVK'
+    WHEN name ~* '\mlvm\M'               THEN 'LVM'
+    WHEN name ~* 'cosmos'                THEN 'CosmosDirekt'
+    WHEN name ~* 'continentale'          THEN 'Continentale'
+    WHEN name ~* 'general'               THEN 'Generali'
+    WHEN name ~* 'barmenia'              THEN 'Barmenia'
+    WHEN name ~* 'gothaer'               THEN 'Gothaer'
+    WHEN name ~* '\mhdi\M'               THEN 'HDI'
+    WHEN name ~* 'zurich'                THEN 'Zurich'
+    WHEN name ~* 'verti'                 THEN 'Verti'
+    WHEN name ~* '\mvhv\M'               THEN 'VHV'
+    WHEN name ~* 'volkswagen|^vw |vw$'   THEN 'Volkswagen'
+    WHEN name ~* 'kravag'                THEN 'KRAVAG'
+    WHEN name ~* 'debeka'                THEN 'DEBEKA'
+    WHEN name ~* 'ergo'                  THEN 'ERGO'
+    WHEN name ~* '\maig\M'               THEN 'AIG'
+    WHEN name ~* 'europa'                THEN 'Europa'
+    WHEN name ~* 'baloise|basler'        THEN 'Baloise'
+    WHEN name ~* 'signal *iduna'         THEN 'Signal Iduna'
+    WHEN name ~* 'nürnberger|nuernberger' THEN 'NÜRNBERGER'
+    WHEN name ~* 'württembergische|wuerttembergische' THEN 'Württembergische'
+    WHEN name ~* '\mwgv\M'               THEN 'WGV'
+    WHEN name ~* 'r\+v'                  THEN 'R+V'
+    WHEN name ~* 'admiral'               THEN 'AdmiralDirekt'
+    WHEN name ~* 'neo *digital'          THEN 'Neodigital'
+    WHEN name ~* 'da *direkt'            THEN 'DA Direkt'
+    WHEN name ~* 'sparkass|s-direkt|s-?direkt' THEN 'Sparkassen Direkt'
+    WHEN name ~* 'alte *leipziger'       THEN 'Alte Leipziger'
+    WHEN name ~* 'concordia'             THEN 'Concordia'
+    WHEN name ~* 'mecklenburg'           THEN 'Mecklenburgische'
+    WHEN name ~* 'rhion|rheinland'       THEN 'RheinLand'
+    WHEN name ~* 'itzehoer'              THEN 'Itzehoer'
+    WHEN name ~* 'fahrlehrer'            THEN 'Fahrlehrer'
+    WHEN name ~* 'toyota'                THEN 'Toyota'
+    WHEN name ~* 'freeyou|friday'        THEN name
+    ELSE trim(name)
+  END AS kanon
+FROM core.dim_organisation WHERE typ='versicherer'
+)
+SELECT kanon, count(*) n_varianten, string_agg(name, ' | ' ORDER BY name) rohnamen
+FROM k GROUP BY 1 HAVING count(*)>1 ORDER BY n_varianten DESC;
