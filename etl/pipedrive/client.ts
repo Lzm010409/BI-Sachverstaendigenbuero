@@ -34,7 +34,7 @@ interface PageResponse<T> {
  * durch und ruft `onItem` für jedes Element. Gibt die höchste update_time zurück.
  */
 export async function paginate<T extends { update_time?: string }>(
-  resource: "deals" | "organizations",
+  resource: "deals" | "organizations" | "persons",
   params: Record<string, string>,
   onItem: (item: T) => Promise<void>,
 ): Promise<{ count: number; maxUpdateTime: string | null }> {
