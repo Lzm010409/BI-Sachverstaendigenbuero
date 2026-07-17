@@ -34,7 +34,8 @@ services:
           npx tsx etl/pipedrive/extract-persons.ts;
           npx tsx etl/sevdesk/extract-invoices.ts;
           npx tsx etl/sevdesk/extract-positions.ts;
-          npx tsx etl/sevdesk/extract-vouchers.ts; }
+          npx tsx etl/sevdesk/extract-vouchers.ts;
+          npx tsx etl/sevdesk/extract-payments.ts; }
     environment:
       WAREHOUSE_DB_HOST: ${WAREHOUSE_DB_HOST}
       WAREHOUSE_DB_PORT: ${WAREHOUSE_DB_PORT:-5432}

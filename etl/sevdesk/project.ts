@@ -72,6 +72,44 @@ export function projectInvoice(inv: Json): Json {
   };
 }
 
+export interface ProjectedBooking {
+  id: string;
+  invoice_id: string;
+  payload: Json;
+}
+
+/**
+ * Whitelist-Projektion eines CheckAccountTransactionLog (Zahlungs-/Ausbuchungs-
+ * buchung je Rechnung). DSGVO: NUR Betrag/Datum/Konto/IDs. Verworfen werden
+ * payeePayerName (Geschädigter), payeePayerAcctNo/BankCode (IBAN), paymtPurpose
+ * (enthält Namen), primaNotaNo, externalId, compareHash.
+ */
+export function projectBooking(log: Json): ProjectedBooking {
+  const tx = (log.checkAccountTransaction ?? {}) as Json;
+  const acc = (tx.checkAccount ?? {}) as Json;
+  const obj = (log.object ?? {}) as Json;
+  const invoiceId = obj.id != null ? String(obj.id) : "";
+  return {
+    id: String(log.id),
+    invoice_id: invoiceId,
+    payload: {
+      log_id: String(log.id),
+      transaction_id: tx.id != null ? String(tx.id) : null,
+      invoice_id: invoiceId || null,
+      // amountPaid = auf DIESE Rechnung gebuchter Teilbetrag (robust bei Sammel-
+      // zahlungen); Fallback auf den vollen Transaktionsbetrag.
+      amount: log.amountPaid ?? tx.amount ?? null,
+      booking_date: log.bookingDate ?? tx.valueDate ?? tx.entryDate ?? null,
+      value_date: tx.valueDate ?? null,
+      konto_id: acc.id != null ? String(acc.id) : null,
+      konto_name: acc.name ?? null,                 // "Geschäftskonto Postbank" / "Ausgebuchte Rechnungen"
+      konto_nr: acc.accountingNumber ?? null,       // 1100 (Bank) / 1203 (Ausbuchung)
+      konto_type: acc.type ?? null,                 // online (Bank) / offline (virtuell)
+      tx_status: tx.status ?? null,
+    },
+  };
+}
+
 export interface ProjectedPosition {
   id: string;
   invoice_id: string;

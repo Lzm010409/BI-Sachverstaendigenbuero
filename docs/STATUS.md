@@ -129,6 +129,33 @@ Rechtsanwälte (68, 85 k€).
   „Wittenberg & Collegen" / „…und Kollegen"); Versicherer-Namen kanonisieren
   (Pipedrive-Org „HUK" vs „HUK Coburg Vers. AG" vs Brief „HUK…").
 
+### Kürzung/Durchsetzung ZAHLUNGSBASIERT (`sql/031`/`032`) — löst OCR ab (2026-07-17)
+
+**Inhaber-Modell umgesetzt:** Die echte Kürzung kommt NICHT aus OCR-Kürzungsschreiben,
+sondern aus dem **sevDesk-Zahlungsverlauf** je Rechnung. Bestätigt an echtem Sample
+(`GET /Invoice/{id}/getCheckAccountTransactionLogs`): Buchungen trennen sauber
+- **„Geschäftskonto Postbank"** (Konto 1100, `online`) = Zahlungseingang
+- **„Ausgebuchte Rechnungen"** (Konto 1203, `offline`) = Ausbuchung.
+Modell: `Kürzung = Rechnung − erste Zahlung`, `Ausbuchung = Σ Ausbuchungsbuchungen`,
+`Durchsetzung = 1 − Ausbuchung/Kürzung`; nur `won`; USt-Einbehalt (Kürzung≈MwSt) raus;
+**Haftungsquote/Teilschuld (Pipedrive-Ausbuchungsgrund 71) raus** (keine Kürzung).
+Kürzungs**grund** (LF2) kommt aus dem Pipedrive-Ausbuchungsgrund (69 Grundhonorar,
+70 Nebenkosten, 71 Teilschuld, 73 Mangel an Beweisen, 74 Ablehnung) — **kein OCR nötig**.
+
+- **Gebaut:** `etl/sevdesk/extract-payments.ts` (1 Call/Rechnung, wie Positionen;
+  DSGVO: `projectBooking` verwirft payeePayerName/IBAN/Verwendungszweck), `sql/031`
+  `raw.sevdesk_invoice_bookings`, `sql/032` `core.fact_zahlung`/`fact_rechnung_zahlung`
+  + marts `v_zahlungsverlauf`, `v_durchsetzung_zahlung` (+ je Versicherer/Anwalt/Grund).
+  In die Deploy-Kette (docker-compose) nach extract-vouchers eingehängt.
+- **Backfill = automatisch beim nächsten UI-Deploy** (Extractor läuft über ALLE ~994
+  Rechnungen). Danach verifizieren (mbq.py) + die alten OCR-Kürzungs-Cards/Views durch
+  die zahlungsbasierten ersetzen.
+- **OCR-Abrechnungsschreiben kann deaktiviert werden:** Betrag+Quote liefert der
+  Zahlungsweg (breiter/zuverlässiger als 41 Briefe), Grund+Haftungsquote der Pipedrive-
+  Ausbuchungsgrund. Bereits geladene Briefdaten bleiben (schaden nicht). Einzig ein
+  itemisierter Kürzungsgrund je Position wäre nur im Brief — aktuell nicht gebraucht.
+  (Stellungnahme-Schreiben LF3 sind eine SEPARATE, noch offene Quelle.)
+
 ### Dashboard 8 „7 · Anwälte × Versicherer" + Kürzungsquellen-Befund (2026-07-17)
 
 **Dashboard 8** (`scratchpad/build_anwalt_kreuz.py`, 6 Cards, Inline-SQL): Schadenhöhe/
