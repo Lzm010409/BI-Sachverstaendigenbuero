@@ -33,7 +33,11 @@
       { "key": "621afa76ad0e9c446f624588a0e964a6c31c8f93", "label": "unbekannt_621afa76", "field_type": "unknown", "options": null, "status": "needs_token", "dwh": "exclude", "notes": "In Stichprobe durchgängig null. Bedeutung offen." },
       { "key": "b189ecbd4510e9555bf8fbf5e8c2fa33159532ce", "label": "unbekannt_b189ecbd", "field_type": "unknown", "options": null, "status": "needs_token", "dwh": "exclude", "notes": "In Stichprobe durchgängig null. Bedeutung offen." }
     ],
-    "person": [],
+    "person": [
+      { "key": "3ddf6b2d5dace3e6d0bbc276a159773cce31c176", "label": "PLZ", "field_type": "varchar", "options": null, "status": "confirmed", "dwh": "include", "notes": "Wohn-PLZ des Geschädigten. DSGVO: NUR als PLZ-Gebiet (erste 2 Ziffern) ins DWH, nie 5-stellig, nie mit Name/Straße." },
+      { "key": "98fc62cc2f9f30880c26a5184cd6a7ffe2e3512c", "label": "Ort", "field_type": "varchar", "options": null, "status": "confirmed", "dwh": "include", "notes": "Wohnort des Geschädigten (Stadt). Einzugsgebiet-Dimension, Leitfrage 7." },
+      { "key": "f7a6ca526a3fad10514cf6801b6ca64f8258b464", "label": "Strasse", "field_type": "varchar", "options": null, "status": "confirmed", "dwh": "exclude", "notes": "DSGVO: Straße+Hausnummer = Personenbezug. NIE ins DWH." }
+    ],
     "organization": [
       { "key": "5076c4b60d419e0d1d19bb82423aff38fde5eaec", "label": "E-Mail", "field_type": "varchar", "options": null, "status": "confirmed", "dwh": "include", "notes": "Org-E-Mail (juristische Person). Belegt: info@huk-coburg.de u.a." },
       { "key": "f8457fc274acc8b82ae223f2c44d0dbdcf7ea755", "label": "unbekannt_f8457fc2", "field_type": "unknown", "options": null, "status": "needs_token", "dwh": "exclude", "notes": "In Stichprobe null." },

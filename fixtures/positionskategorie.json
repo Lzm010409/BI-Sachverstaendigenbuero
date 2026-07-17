@@ -1,0 +1,21 @@
+{
+  "_hinweis": "Editierbarer Kategorien-Katalog (Quelle der Wahrheit). Zum Aendern: Zeile ergaenzen/anpassen -> redeploy (etl/sevdesk/load-kategorien.ts spiegelt die Datei in core.dim_positionskategorie_regel). muster = SQL ILIKE-Muster gegen Positions-name ODER part_name; % ist Platzhalter. prioritaet: kleiner gewinnt bei mehreren Treffern. Unkartierte Namen -> 'Sonstiges' (sichtbar in core.dim_positionskategorie).",
+  "regeln": [
+    { "muster": "SV-Honorar%",          "kategorie": "Grundhonorar",          "prioritaet": 100 },
+    { "muster": "Grundhonorar%",        "kategorie": "Grundhonorar",          "prioritaet": 100 },
+    { "muster": "Fahrtkosten%",         "kategorie": "Fahrtkosten",           "prioritaet": 100 },
+    { "muster": "Lichtbild%",           "kategorie": "Fotokosten",            "prioritaet": 100 },
+    { "muster": "Foto%",                "kategorie": "Fotokosten",            "prioritaet": 100 },
+    { "muster": "Porto%",               "kategorie": "Porto/Telefon",         "prioritaet": 100 },
+    { "muster": "%Telefon%",            "kategorie": "Porto/Telefon",         "prioritaet": 110 },
+    { "muster": "Schreibkost%",         "kategorie": "Schreibkosten",         "prioritaet": 100 },
+    { "muster": "EDV%",                 "kategorie": "EDV-Kosten",            "prioritaet": 100 },
+    { "muster": "Restwert%",            "kategorie": "Restwertermittlung",    "prioritaet": 100 },
+    { "muster": "Schichtdickenmess%",   "kategorie": "Schichtdickenmessung",  "prioritaet": 100 },
+    { "muster": "Systemgeb%",           "kategorie": "Systemgebühr",          "prioritaet": 90 },
+    { "muster": "Digitalisierung%",     "kategorie": "Digitalisierungspauschale", "prioritaet": 100 },
+    { "muster": "So%derrecherche%",     "kategorie": "Sonderrecherche",       "prioritaet": 100 },
+    { "muster": "Bewertungsabfrage%",   "kategorie": "Bewertungsabfrage",     "prioritaet": 120 },
+    { "muster": "Bewertrungsabfrage%",  "kategorie": "Bewertungsabfrage",     "prioritaet": 120 }
+  ]
+}

@@ -1,83 +1,247 @@
-# STATUS — Arbeitsstand & nächster Schritt
+# STATUS — Arbeitsstand & nächste Schritte
 
-Kurznotiz für Session-Wechsel (der Container ist ephemer; alles Wichtige ist
-committet). **Aktueller Arbeits-Branch: `claude/repo-deployment-setup-emf5b8`**
-(der Inhaber hat zugestimmt, Phase 3 ebenfalls auf diesem Branch zu bauen).
+Handoff für den Session-Neustart (Container ist ephemer; alles Wichtige ist
+committet). **Zuerst diese Datei + `CLAUDE.md` lesen.**
 
-## Erledigt (gepusht)
+## Branches (wichtig!)
 
-- **Phase 0** — Fundament: CLAUDE.md, Feldmapping, `fields.generated.ts`.
-- **Phase 1** — Infra: Bootstrap-SQL, `sql/001_init.sql`, `scripts/migrate.ts`,
-  `scripts/backup.sh`, `docker-compose.yml`, `docs/RUNBOOK.md`.
-- **Phase 2** — Pipedrive→`fact_ausbuchung`→marts: `sql/002`–`004`, Pipedrive-
-  Extraktoren, Golden-Set. **Deployt & live verifiziert** (s. u.).
+- **Designierter Arbeits-Branch:** `claude/sevdesk-phase-3-9a7g5k`.
+- **Deploy-Branch:** `claude/repo-deployment-setup-emf5b8` — **die Coolify-App
+  `bi-etl-warehouse` deployt von diesem Branch, nicht vom Arbeits-Branch.** Der
+  Inhaber hat freigegeben, Phasen-Arbeit per Fast-Forward auch dorthin zu pushen.
+  → **Nach jedem Commit auf beide Branches pushen:**
+  `git push origin claude/sevdesk-phase-3-9a7g5k` **und**
+  `git push origin claude/sevdesk-phase-3-9a7g5k:claude/repo-deployment-setup-emf5b8`.
 
-## Deployment Phase 2 (erledigt & verifiziert, 2026-07-15)
+## Erledigt (deployt & live verifiziert)
 
-ETL-Ressource **`bi-etl-warehouse`** in Coolify (`coolify.gollenstede.app`, API v4):
+- **Phase 0–2** — Fundament, Infra, Pipedrive→`fact_ausbuchung`→marts. **1001 Deals** live.
+- **Phase 3 — sevDesk positionsscharf.** `sql/005`–`008`,
+  `etl/sevdesk/{client,project,extract-invoices,extract-positions,run-log,load-kategorien}.ts`.
+  **Live: 994 Rechnungen, 6656 Positionen.** DSGVO Option A (kein Personenbezug in
+  `raw`; `metabase_ro` auf `raw` gesperrt). Aktenzeichen-Join 99,95 %. Konsistenz
+  988/994 exakt (6 Rabatt-Sonderrechnungen — geklärt, ignorieren).
+- **Kategorien-Katalog = editierbare Seed-Tabelle** (`core.dim_positionskategorie_regel`,
+  Migration `sql/008`). **Pflege: `fixtures/positionskategorie.json` editieren →
+  redeploy.** `Sonstiges` 265 → 28.
+- **ETL-Observability:** `marts.v_etl_run` (Erfolg/Fehler + rows je Quelle),
+  `marts.v_etl_status` (Wasserstand). Erste Anlaufstelle bei Extraktionsproblemen.
 
-- **App-UUID:** `agsgcco44g4oko4swc0ocgc0`, Environment 28, Netz `coolify`.
-  Deploy anstoßen: `GET {COOLIFY_BASE_URL}/api/v1/deploy?uuid=<app-uuid>` mit
-  `Authorization: Bearer $COOLIFY_API_TOKEN`. (Deploy „finished" = `up -d`
-  abgesetzt; der `etl`-Container ist One-shot und läuft danach asynchron durch.)
-- **Ziel-DB:** das mit dem **Metabase-Service** gebündelte **Postgres 16**
-  (Service-UUID `b4kwswkscsskcs0sgc8g4kwc`). Host `postgresql`, DB `warehouse`,
-  erreichbar über externes Docker-Netz `WAREHOUSE_NETWORK=b4kwswkscsskcs0sgc8g4kwc`.
-  **`PG_MAJOR=16`** (nicht 17).
-- **Bootstrap** (`etl`/`metabase_ro` + DB `warehouse`) existiert bereits;
-  `ETL_DB_PASSWORD` lag als Session-ENV vor. Alle Secrets sind an der App gesetzt.
-- **Deploy-Service `etl`:** migrate (`001`–`004`) → `extract:orgs` →
-  `extract:deals` (idempotent/inkrementell). `golden` + `backup` = profile
-  `manual` (kein Deploy-Gate).
-- **Live-Verifikation via Metabase-API** (`metabase.gollenstede.app`, Warehouse =
-  **DB-ID 2** als `metabase_ro`; `METABASE_API_KEY` war Session-ENV): Migrationen
-  angewandt, `raw`/`_meta` für `metabase_ro` gesperrt (DSGVO ok), **1001 Deals**
-  in `fact_ausbuchung`, 269 Orgs, **Golden 20/20 grün**.
-- **Golden re-baselined:** Deals 355/465/585/607 hatten inzwischen einen in
-  Pipedrive nachgetragenen Ausbuchungsgrund (355=74 Ablehnung Versicherung,
-  übrige=69 Grundhonorar) — an der Quelle bestätigt, Fixture aktualisiert. Kein Bug.
+## Betriebsfakten (für Verifikation & Deploy)
 
-## Betrieb / Automatik
+- **Coolify:** App `bi-etl-warehouse`, UUID `agsgcco44g4oko4swc0ocgc0`. Deploy:
+  `GET {COOLIFY_BASE_URL}/api/v1/deploy?uuid=<uuid>` mit `Authorization: Bearer
+  $COOLIFY_API_TOKEN`. `COOLIFY_BASE_URL` = `coolify.gollenstede.app` (Schema
+  `https://` selbst voranstellen). Status: `/api/v1/deployments/<deployment_uuid>`.
+- **`etl`-Deploy-Kette** (resilient): `migrate && { load-kategorien;
+  extract-orgs; extract-deals; extract-invoices; extract-positions; }`.
+  One-shot-Container, läuft nach „Deploy finished" **asynchron** durch (sevDesk-
+  Positionen = ~1000 Calls, dauert Minuten). Fehler eines Schritts blockiert die
+  anderen nicht mehr.
+- **Warehouse-DB:** das mit Metabase gebündelte **Postgres 16**. **Kein direkter
+  Zugriff aus der Session** (internes Coolify-Netz). Verifikation läuft über die
+  **Metabase-API:** `metabase.gollenstede.app`, `POST /api/dataset`, Header
+  `x-api-key: $METABASE_API_KEY`, Body `{"database":2,"type":"native","native":{"query":"…"}}`
+  (läuft als `metabase_ro` → nur core/marts, kein `raw`).
+- **Session-ENV vorhanden:** `COOLIFY_*`, `METABASE_API_KEY`, `PIPEDRIVE_*`,
+  `SEVDESK_API_TOKEN`, `ETL_DB_PASSWORD`. **Egress zu sevDesk/autoiXpert ist per
+  Netzwerk-Policy geblockt** → Fremd-APIs nur über vom Inhaber gelieferte
+  curl-Ausgaben/Samples inspizieren (n8n-MCP bindet keine Credential an HTTP-Nodes).
+- **Lokaler Test ohne Prod:** Wegwerf-Postgres 16 (`/usr/lib/postgresql/16/bin`),
+  `npm run migrate` + `ALLOW_LOAD_GOLDEN=1 npm run load:sevdesk && npm run
+  load:kategorien` + `npm run test:sevdesk`.
 
-- **Nächtliche Aktualisierung = Weg B (gewählt):** n8n-Workflow
-  **„BI Warehouse — Nightly Refresh"** (`n8n-coolify.gollenstede.app`,
-  Workflow-ID `mHZNeWIsEMSJIybF`) — Schedule 02:00 UTC → HTTP-GET auf den
-  Coolify-Deploy-Endpunkt. **Status: INAKTIV.** Zu tun (Inhaber): am HTTP-Node ein
-  Bearer-Auth-Credential „Coolify Deploy Token" (Wert = Coolify-API-Token)
-  anlegen, dann Workflow aktivieren.
-- **Backup: noch offen** (Weg B deckt es nicht ab). `backup`-Service existiert
-  (`docker compose run --rm backup`, braucht laufenden Container-Kontext). Später
-  sauber lösen (z. B. eigener kleiner Baustein / n8n).
-- Hinweis: Coolify Scheduled Tasks laufen per `docker exec` in einem **laufenden**
-  Container — passt nicht zum One-shot-Design, daher Weg B statt Scheduled Task.
+## Offener Betrieb (unverändert, Inhaber)
 
-## Offen / vereinbart (Domäne)
+- **Nächtliche Aktualisierung:** n8n-Workflow „BI Warehouse — Nightly Refresh"
+  (`mHZNeWIsEMSJIybF`, 02:00 UTC → Coolify-Deploy). **Status: INAKTIV** — am HTTP-
+  Node Bearer-Credential „Coolify Deploy Token" anlegen, dann aktivieren.
+- **Backup:** noch offen (`backup`-Service existiert, profile manual).
 
-- Ausbuchungshistorie belastbar **ab 2024**.
-- `dim_ausbuchungsgrund` ist datengetrieben (fängt neue Gründe automatisch).
-- Durchsetzungsquote (1 − Σ Ausbuchung / Σ Kürzung; Teilschuld/Haftungsquote
-  raus) → **Phase 5** (braucht Phase 3).
+---
 
-## NÄCHSTER SCHRITT — Phase 3 (sevDesk positionsscharf) BAUEN
+## AKTUELLER STAND (2026-07-15)
 
-Plan liegt gegengelesen in **`docs/plan-phase-3.md`**. Fixe Entscheidungen:
-**DSGVO Option A** (Personenbezug gar nicht persistieren), Bau auf aktuellem Branch.
-Join steht: `fact_ausbuchung.sevdesk_rechnung_id` → sevDesk **Invoice-Objekt-ID**
-(per Deeplink bestätigt, z. B. Deal 355 → Rechnung `64614720`).
+- **Phase 4 (Fachwerte): OneDrive-Route, im Bau.** Entscheidung: Fachwerte kommen aus
+  den **Gutachten-PDFs in OneDrive** (M365/Graph bewiesen — `read_resource` liefert
+  vollen Text, „Zusammenfassung" trägt alle Fachwerte). Gebaut & verifiziert:
+  `etl/gutachten/parse-fachwerte.ts` (Label-Parser, an echtem Gutachten 10/10 Werte
+  korrekt), `sql/015` `raw.gutachten_fachwerte` + `sql/016` `core.fact_gutachten` +
+  `v_honorar_vs_schaden` (LF8) + `v_totalschaden_quote` (LF10) — lokal verifiziert
+  (Reparatur- vs. Totalschaden-Klassifikation korrekt). **Offen:** n8n-Workflow
+  (OneDrive → Parser → `raw.gutachten_fachwerte`) + Backfill. Alte autoiXpert-API-
+  Route (`docs/status-phase-4.md`) nur noch für Versicherer-Zuordnung (LF2) relevant.
+- **Phase 5 (Kürzung + Durchsetzungsquote): GEBAUT & verifiziert.** Plan:
+  **`docs/plan-phase-5.md`** (gegenlesen). Zwei Inhaber-Entscheidungen umgesetzt:
+  - **Kürzung** = sevDesk-Rechnungsdifferenz (`sumGross − paidAmount`), außer ±5 ct =
+    MwSt (USt-Einbehalt). `sql/010` `core.fact_kuerzung` + marts (LF2). Nur `won`,
+    Teilschuld/Haftungsquote getrennt, null≠0.
+  - **Ausbuchung** = sevDesk-Beleg „Forderungsverlust <Aktenzeichen>" (eigene, voll-
+    ständige Quelle). `sql/012` raw + `etl/sevdesk/extract-vouchers.ts` (DSGVO:
+    supplier verworfen) + `sql/013` `core.fact_forderungsverlust`.
+  **DEPLOYT & an Prod-Daten geprüft (2026-07-16, Deploy-Branch + Coolify).**
+  **Kritischer Befund:** `sumGross − paidAmount` misst die Kürzung NICHT — sevDesk
+  bucht die Rechnung bei Abschluss voll (Zahlung + Ausbuchungsbuchung), offener
+  Betrag ~0 trotz realer Abschreibung (506/515 „Kürzungen" waren < 0,10 €). Korrektur
+  `sql/014`: **Ausbuchung aus den Forderungsverlust-Belegen** (`fact_forderungsverlust`,
+  89 Fälle / 34 k€) ist die zuverlässige Hauptlieferung → `v_forderungsverlust_je_versicherer`
+  / `v_forderungsverlust_monat` (Leitfrage 5). Kürzungs-Views mit Bagatellgrenze entschärft.
+  **Die echte Kürzung braucht das Kürzungsschreiben** → Strategie in
+  `docs/strategie-kuerzung-und-pdf.md`.
 
-**BLOCKER:** Um korrekt/DSGVO-sicher zu bauen, muss die echte sevDesk-Struktur
-inspiziert werden. Dafür in der Session den **read-only `SEVDESK_API_TOKEN`**
-bereitstellen (wird ohnehin als Coolify-Secret gebraucht). Alternativ eine
-Beispiel-Rechnung inkl. Positionen als JSON (Namen geschwärzt).
-- sevDesk-API: `https://my.sevdesk.de/api/v1`, Endpunkte `Invoice`, `InvoicePos`
-  bzw. `Invoice/{id}/getPositions`; Auth `api_token`/Header; Pagination
-  `limit`/`offset`.
-- n8n hat ein „SevDesk"-Credential (`httpHeaderAuth`, ID `745fOXYVTHY5XVKf`),
-  aber das n8n-MCP lässt es nicht an einen HTTP-Node binden → Inspektion via n8n
-  hat nicht geklappt.
+## n8n-Workflows (Phase 4 & 5) — via HTTP-Ingest (n8n ≠ Warehouse-Netz)
 
-Ablauf danach: Token → 1–2 echte Rechnungen inspizieren → `sql/005_raw_sevdesk.sql`
-(+ Option-A-Filter im Extraktor `etl/sevdesk/*`) → `sql/006_core_sevdesk.sql`
-(`fact_rechnungsposition`, `dim_positionskategorie`, marts) → Golden erweitern →
-`etl`-Deploy-Service um sevDesk-Extraktion ergänzen. Offen für den Inhaber:
-Positionskategorien-Katalog; ob Rechnungssumme brutto == Pipedrive `deal_value`.
+n8n erreicht die DB nicht → Schreiben/Lesen über den **HTTP-Ingest-Dienst**
+`etl/ingest/server.ts` (Coolify-Service `ingest`, langlaufend, im Warehouse-Netz,
+Bearer-gesichert). Endpunkte: `GET /pending/gutachten`, `POST /ingest/gutachten`,
+`POST /ingest/kuerzung`, `/health`. Lokal end-to-end getestet. Details: **`n8n/README.md`**.
+- **Phase 4** (`BHUg2f27aafCfI5Q`): Zeitplan → pending → OneDrive-Gutachten
+  (**nativer OneDrive-Node**, Credential „Microsoft Drive account") → Parser →
+  `POST /ingest/gutachten`. Fehlertolerant (`onError: continue`).
+- **Phase 5** (`4JgVp4tCzNHkPCpg`, aktiv): Outlook-Anhang → **Mistral-OCR + LLM** →
+  Pipedrive-Notiz + `POST /ingest/kuerzung` → `marts.v_durchsetzung_echt`.
+  **+ Backfill-Zweig** „Backfill: Start" (manuell): OneDrive-Suche `Kürzung` →
+  gleiche OCR→LLM→Ingest-Kette (historische Schreiben, `letter_key`-dedupliziert).
+
+### Kürzungs-Backfill (2026-07-16) — via n8n-Reader, geladen über Deploy-Kette
+
+OneDrive läuft über SharePoint; die Session hat **keinen** M365-Datei-Zugriff
+(nur `get_me`), n8n hingegen schon (Credential **„Microsoft Drive account"**
+`n0UiHatEWO28b1Uo`). Lösung: **n8n als Reader**, das Warehouse-Schreiben macht die
+**Deploy-Kette** (kein Ingest-Dienst/Credential nötig).
+
+- **Reader-Workflow** `qU8wCN2uqlgaz9rs` „Phase 5 Backfill — Schadenzahlung"
+  (Quelle: `n8n/phase5-backfill-schadenzahlung.workflow.ts`): OneDrive-Suche
+  **`Schadenzahlung`** → Batch-Download (3er, sonst OneDrive-Überlast) → Mistral-OCR
+  → Mistral-LLM → Knoten „Sammeln". Ausgelesen über die **Production-Execution**
+  (manuelle Executions inaktiver Workflows werden nicht gespeichert → Zeitplan +
+  Publish + Production-Mode; danach unpublished).
+- **Präzision:** Dateinamen sind unzuverlässig → gezielt „Schadenzahlung" (17 Treffer,
+  7 echte Fälle in `…/Gutachten/JJJJ/MM/<az>/`, Rest private Konto-PDFs mit
+  `folderAz=null` gefiltert). **Aktenzeichen aus dem Ordnerpfad**, nicht aus dem LLM
+  (der verliest es oft). Aktenzeichen der 7: 1025/1742TG, 0825/1686TG, 1224/1434TG,
+  0225/1506TG, 1223/1029TG, 0825/1683TG, 1122/694TG.
+- **Echte Kürzung (Inhaber-Entscheidung):** `Kürzung = fakturiert (sevDesk/Deal)
+  − gezahlt_sv (Brief)`. **Getrennt in drei Migrationen** (damit ein View-Fehler das
+  Laden nicht blockiert / zur Fehler-Bisektion): `sql/019` upsertet die 7 Briefe nach
+  `raw.kuerzungsschreiben`; `sql/020` legt `marts.v_kuerzung_sevdesk` an; `sql/021`
+  `v_durchsetzung_sevdesk` (nur `plausibel` & Kürzung>0) + `v_kuerzung_sevdesk_diagnose`.
+  Gegen Live-Daten geprüft: 0825/1683TG=390,51 · 1223/1029TG=185,01 · 1224/1434TG=0
+  (voll) — die Methode fängt Fehl-Lesungen ab (0225/1506TG: gezahlt>fakturiert →
+  `plausibel=false`).
+- **Deploy-Falle (wichtig):** Coolify-API-Deploys (`/api/v1/deploy`) rekreieren den
+  `etl`-One-Shot NICHT zuverlässig → `migrate` läuft nicht. **Nur der UI-Deploy**
+  („Removing old containers → New container started") führt die Kette aus. Nach Push
+  auf den Deploy-Branch also in der Coolify-UI deployen.
+- **DEPLOYT & verifiziert (2026-07-16):** `fact_kuerzungsereignis=7`,
+  `v_durchsetzung_sevdesk` mit 4 plausiblen Fällen (0825/1683TG **93,1 %**;
+  1223/1029TG/0825/1686TG/1025/1742TG 100 %), Diagnose-View fängt die 3 Nicht-Fälle
+  ab. Zwei Bugs unterwegs gefixt: crashender Ingest-Container vergiftete den Deploy
+  (entfernt); Spaltennamen-Mismatch `fv.ausbuchung`/`ausgebucht` ließ `CREATE VIEW`
+  in `021` scheitern (Bisektion über 019/020/021).
+- **ERWEITERT & DEPLOYT (2026-07-17) — `sql/024`:** Reader jetzt
+  über **6 Suchbegriffe** (Schadenzahlung/Kürzung/Regulierung/Ablehnung/Abrechnung/
+  SVK) + **Dateiname-Whitelist**. Wichtiger Befund: OneDrive-Suche matcht auch
+  Datei-INHALT → generische Terme trafen **1528** PDFs (Abtretungen/Widerrufe); der
+  Whitelist-Filter (`Kandidaten`-Node) auf echte Versicherer-Schreiben schneidet auf
+  **123 Kandidaten → 67 Kürzungsschreiben → 63 verwertbare Fälle**. `Stellungnahme`
+  (unsere Erwiderung, kein Zahlbetrag) bewusst raus (eigene LF3-Quelle). Execution
+  `1554241`. Datenqualität: `sachverstaendigenkosten` kommt mal Zahl, mal Objekt
+  `{gezahlt,…}` → auf `gezahlt_sv` normalisiert.
+  - **Coverage-Realität:** von den 63 sind nur **17 in `fact_ausbuchung`** (Pipedrive),
+    davon **13 mit gezahlt_sv → sevDesk-Methode berechenbar** (+ die 7 aus `sql/019`).
+    Die übrigen **46 sind vor-Pipedrive-Altfälle** (2019–2024) ohne sevDesk-Deal →
+    nur über den **brief-expliziten `kuerzungsbetrag`** (Versicherer-Behauptung,
+    Domänenmodell) abbildbar. Daher speichert `sql/024` **beide** Felder:
+    `sachverstaendigenkosten` (50×, sevDesk-Methode) **und** `kuerzungsbetrag` (39×,
+    echt-Views `v_durchsetzung_echt`/`v_kuerzung_echt_je_versicherer`).
+  - **Inhaber-Entscheidung: Variante A** (alle 63, beide Methoden). **VERIFIZIERT
+    live:** `fact_kuerzungsereignis=70` (7+63), `v_durchsetzung_sevdesk` 18 plausible
+    Fälle (z. B. 0525/1568TG DEVK 5406,86 — sevDesk-fakturiert 6062,36 ≈ brief
+    urspruenglich_gefordert 6062,34, unabhängige Quellen auf 2 ct deckungsgleich),
+    Plausibilitäts-Bremse fängt 1 Fehl-Lesung (gezahlt>fakturiert). `v_kuerzung_echt_
+    je_versicherer` (LF2) über alle Versicherer befüllt inkl. der 46 Altfälle.
+  - **Reader nach Backfill unpublished** (sonst OCR-t der Zeitplan nächtlich alle 123).
+  - **Offen/Ausbau:** `Stellungnahme`-Schreiben (108×) als eigene LF3-Quelle
+    (setze ich Kürzungen per Stellungnahme durch?) noch nicht erfasst.
+
+### Phase 4 (Gutachten 2026) — M365-Direktroute, `sql/025`, wartet auf Deploy-Freigabe (2026-07-17)
+
+Der M365-Connector zeigt inzwischen **SharePoint-Tools** (`sharepoint_search`,
+`read_resource`) — vorher nur `get_me`. Damit lassen sich Gutachten-PDFs **direkt** aus
+SharePoint lesen (voller Textlayer, **kein OCR, kein n8n**). Genutzt, um die 2026-Lücke
+des Volllaufs (`sql/023`) zu schließen.
+- **150 offene 2026-won-Fälle** (in `fact_ausbuchung`, nicht in `fact_gutachten`) geprüft:
+  **120 mit Gutachten/Bewertung gefunden & geparst** (86 Reparatur-, 26 Totalschaden,
+  8 Bewertung), 30 ohne abgelegtes Gutachten (nur Rechnung/Werkstatt/WBW — sehr junge Fälle).
+- **Extraktion über isolierte Subagenten** (Suche → `read_resource` → Zusammenfassung
+  parsen → nur 9 Whitelist-Zahlenfelder). DSGVO: VIN/Kennzeichen/Klarnamen NIE persistiert.
+  Validierung: 120/120 mit exakt den 9 Keys, alle netto×1,19≈brutto, jede Totalschaden-
+  Beurteilung deckt sich mit reparaturkosten_brutto>WBW.
+- **Lernpunkt Concurrency:** 14 Subagenten parallel drosseln MS-Graph (429, 50 RPM shared).
+  Fix: max. ~4 gleichzeitig, sequentiell je Agent, nie `sleep` (Harness bricht ab),
+  bei 429 skip-and-retry. Damit sauber durchgelaufen.
+- **`sql/025`** = 120 Fälle, Upsert `raw.gutachten_fachwerte`. Committet; **wartet auf
+  Deploy-Freigabe** (FF auf Deploy-Branch). Danach `fact_gutachten` ≈ 471+120 = 591.
+
+### Phase 4 (Gutachten-Fachwerte) — Reader gebaut, 11 Fälle live (2026-07-16)
+
+Kein Ingest mehr; **n8n-Reader** liest je Aktenzeichen aus OneDrive und lädt via
+Migration. **Befund:** auch Archive (<2026, Fremdprogramm „Altova StyleVision")
+haben eine **Textebene** und exakt das „Zusammenfassung des Gutachtens"-Format →
+**kein OCR**, nur **3 Seiten** (`maxPages:3`), quasi kostenlos; der Crown-Jewel-
+Regex-Parser passt.
+- **Reader** `Qu9rKyRoMbQ6cxTx` „Phase 4 — Gutachten Fachwerte (Per-Fall, 3 S.)":
+  Fälle → je Aktenzeichen OneDrive-Suche (Aktenzeichen **ohne Slash**, sonst „Bad
+  request"; `alwaysOutputData` sonst stoppt der Batch-Loop) → Gutachten-PDF wählen →
+  Download → PDF-Text 3 Seiten → LLM/Regex → Sammeln (`textLen`-Gate gegen LLM-
+  Halluzination). Ausgelesen über die laufende Execution.
+- **DEPLOYT & verifiziert:** `sql/022` = **11 validierte Fälle** → `core.fact_gutachten`
+  (Totalschaden/130-% korrekt), `marts.v_totalschaden_quote` (LF10),
+  `v_honorar_vs_schaden` (LF8, join auf sevDesk-Grundhonorar).
+- **VOLLLAUF FERTIG (2026-07-16):** Execution `1554143` über alle **881 won-Fälle**
+  gelaufen (status `success`, ~7 h, überstand einen n8n-DB-Restart ohne Datenverlust).
+  Ergebnis inkrementell aus dem `Sammeln`-Node geharvestet (Execution-Daten werden
+  bei Erfolg verworfen → währenddessen mitlesen). **`sql/023_backfill_gutachten_full.sql`
+  = 468 Gutachten** (Trefferquote 468/881 ≈ 53 %; Rest = junge 2026-Fälle noch nicht
+  in OneDrive + 5 PDFs ohne Fachwerte-Summary, bewusst verworfen). Datenqualität:
+  alle Aktenzeichen valide, keine Dubletten, **0 unplausible netto→brutto-Ratios**
+  (alle ≈ 1,19). Endstand `raw.gutachten_fachwerte` nach Deploy = **471 distinct**
+  (468 aus 023 + 3 nur in 022 gefundene Archive). **Committet auf Arbeits-Branch;
+  wartet auf Freigabe für FF-Push auf Deploy-Branch.**
+- **Offen/Ausbau:** nur die erste präzise Scheibe. Weitere Kürzungen heißen anders
+  (`Vers Ablehnung SVK`, Versicherer-Namen) oder kamen per Mail → Suchbegriffe im
+  Reader erweitern; ambige Fälle (0825/1686TG, 1025/1742TG *open*) im Diagnose-View
+  nachbessern. `fact_gutachten` (Phase 4) weiter offen.
+
+## NÄCHSTE SCHRITTE (Auswahl beim Neustart)
+
+### Option A — Phase 4 (autoiXpert)  *(Unterbau gebaut & verifiziert; Architekturfrage offen)*
+Plan + Stand: **`docs/plan-phase-4.md`** (§ „Stand 2026-07-15").
+
+**Gebaut (typecheck grün, DSGVO-Filter gegen ZWEI echte Samples verifiziert — kein
+Leak; noch NICHT in der Deploy-Kette):** `sql/009_raw_autoixpert.sql`,
+`etl/autoixpert/{client,project,extract-gutachten,run-log}.ts`, npm `extract:gutachten`.
+- API (Live-n8n): `GET …/externalApi/v1/reports/{id}`, **Bearer**. `token` =
+  Aktenzeichen. `type` = Gutachtenart. `AUTOIXPERT_API_TOKEN` ist gesetzt.
+- **Bonus LF2:** `insurance.organization_name` schließt die Versicherer-Lücke.
+- Vermittler pseudonymisiert (kann natürliche Person sein), Dokument-Präsenz als
+  Fachsignal (welche DAT-Kalkulation existiert).
+
+**Zentraler Befund:** WBW/Restwert/Wertminderung/Reparaturkosten stehen **nicht in
+der API — nur in den PDFs** (Inhaber bestätigt). Damit blockiert für LF8/LF10 die
+**Architekturfrage: woher die Zahlen** (Plan §7: A vorerst ohne / B PDF-Parsing /
+C evtl. Valuation-Endpunkt / D Pipedrive-Reparaturkosten). **Nächster Schritt =
+diese Entscheidung**, dann `sql/010` (u. a. `v_versicherer_je_fall` für LF2 ist
+schon jetzt baubar) + Golden + Deploy-Kette.
+
+### Option B — Phase 5 (Kürzungsgrund / Durchsetzungsquote)  *(kein neuer Zugang nötig)*
+Fundament steht (Phase 3 Positionen). Durchsetzungsquote = 1 − Σ Ausbuchung / Σ
+Kürzung (Teilschuld/Haftungsquote raus). Braucht: Modellierung Kürzung je Position
+vs. Ausbuchung; Plan `docs/plan-phase-5.md` erstellen (gegenlesen), dann bauen.
+
+### Kleinaufgaben (jederzeit)
+- Rest-`Sonstiges` (28) in `fixtures/positionskategorie.json` ergänzen, sobald der
+  Inhaber die Namen zuordnet (Gestellung Werkstattausrüstung, Phantomkalkulation,
+  „m. Bewertung", Tippfehler).
+- n8n-Nightly aktivieren + Backup sauber lösen (s. o.).

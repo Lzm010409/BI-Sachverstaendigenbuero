@@ -129,11 +129,17 @@ raw.sevdesk_invoice_positions  (id bigint PK, invoice_id bigint NOT NULL, payloa
 
 ## 8. Reihenfolge / Checkliste
 
-- [ ] Branch `phase-3-sevdesk` (eigener Phasen-Branch)
-- [ ] sevDesk-API final gegen aktuelle Doku verifizieren
-- [ ] `SEVDESK_API_TOKEN` als Coolify-Secret an der ETL-Ressource
-- [ ] `sql/005_raw_sevdesk.sql` (raw-Tabellen)
-- [ ] `etl/sevdesk/{client,extract-invoices,extract-positions}.ts` (DSGVO-Filter!)
-- [ ] `sql/006_core_sevdesk.sql` (fact_rechnungsposition, dim_positionskategorie, marts)
-- [ ] Golden erweitern + verifizieren
-- [ ] `etl`-Deploy-Service um sevDesk-Extraktion ergänzen
+- [x] Branch (`claude/sevdesk-phase-3-9a7g5k`)
+- [x] sevDesk-Struktur an echter Rechnung verifiziert (Inhaber-Sample, Az 0726/2012TG)
+- [ ] `SEVDESK_API_TOKEN` als Coolify-Secret an der ETL-Ressource *(beim Deploy)*
+- [x] `sql/005_raw_sevdesk.sql` (raw-Tabellen)
+- [x] `etl/sevdesk/{client,project,extract-invoices,extract-positions}.ts` (DSGVO-Filter Option A)
+- [x] `sql/006_core_sevdesk.sql` (fact_rechnungsposition, dim_positionskategorie, marts)
+- [x] Golden erweitert (`fixtures/sevdesk-sample.json`, `scripts/{load,test}-sevdesk.ts`) + lokal grün
+- [x] `etl`-Deploy-Service um sevDesk-Extraktion ergänzt (+ `sevdesk-test`, profile manual)
+
+**Erledigt-Notiz (2026-07-15):** lokal end-to-end verifiziert (Postgres 16,
+Migrationen 001–006, `test:sevdesk` grün, Konsistenz `differenz=0`, DSGVO-Grants ok).
+Offen: Deploy + Cross-System-Assert (`sumGross` == Pipedrive `deal_value`) + Katalog-
+Review mit dem Inhaber. Konsistenzcheck aus §6 (Σ Positionen == Rechnungssumme) ist
+**bestätigt**.
