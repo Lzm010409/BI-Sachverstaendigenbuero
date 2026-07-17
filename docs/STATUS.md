@@ -129,6 +129,23 @@ Rechtsanwälte (68, 85 k€).
   „Wittenberg & Collegen" / „…und Kollegen"); Versicherer-Namen kanonisieren
   (Pipedrive-Org „HUK" vs „HUK Coburg Vers. AG" vs Brief „HUK…").
 
+### Dashboard 8 „7 · Anwälte × Versicherer" + Kürzungsquellen-Befund (2026-07-17)
+
+**Dashboard 8** (`scratchpad/build_anwalt_kreuz.py`, 6 Cards, Inline-SQL): Schadenhöhe/
+Totalschaden je Anwalt (reich, 470 Gutachten mit Anwalt), Ø Schadenhöhe (Balken),
+PLZ-Gebiet je Anwalt (459), Kürzung je Anwalt (×Versicherer), Durchsetzung je
+Anwalt×Versicherer (belastbar). **Kürzung/Durchsetzung bewusst mit Warnbanner** —
+Einzelfälle.
+- **Befund auf Inhaber-Frage „warum so leer":** Kürzungsdaten kommen aus
+  `fact_kuerzungsereignis` = **echte Kürzungsschreiben**, aktuell **73 gesamt / 41 mit
+  Betrag** aus **zwei Quellen**: `onedrive-backfill` (70) + **NEU `graph-abrechnungs­
+  postfach` (3)** — das ist der Live-Outlook-Workflow `4JgVp4tCzNHkPCpg`, der jetzt
+  **produziert** (vorher 0). Von den 41: **28 Vor-Pipedrive-Altfälle** (kein Deal →
+  kein Anwalt), 4 Deal ohne Anwalt, **nur 9 mit Anwalt** → RA-Kürzungs-Cross ist
+  strukturell fast leer. Nicht der Join ist das Nadelöhr, sondern die dünne
+  Kürzungsquelle; wächst nur mit neuen Schreiben (Live-Quelle). Schaden/PLZ je RA
+  dagegen voll.
+
 ## Erledigt (deployt & live verifiziert)
 
 - **Phase 0–2** — Fundament, Infra, Pipedrive→`fact_ausbuchung`→marts. **1001 Deals** live.
