@@ -33,7 +33,7 @@
 | `2b30a5b6…` | Vorschaden-Beschreibung? | text | inferred | **exclude** | DSGVO |
 | `3bc5c0f3…` | Altschaden (Ja/Nein)? | enum | inferred | include | ❓ vs Vorschaden |
 | `537563a6…` | Altschaden-Beschreibung? | text | inferred | **exclude** | DSGVO |
-| `215832fc…` | Nutzungsausfall Tagessatz? | double | inferred | include | ❓ 128–301, r=−0,01 zu value, Tabellenwert |
+| `215832fc…` | **Rechtsanwalt/Kanzlei** | org-FK (numerisch) | confirmed | include | Inhaber bestätigt; Wert = `org_id` der Kanzlei → `dim_organisation`. NICHT Nutzungsausfall (Fehl-Inferenz). Join-Key LF4/Versicherer×Anwalt |
 | `4476af41…` | unbekannt (kaum genutzt) | double | needs_token | exclude | ❓ 0/100 befüllt |
 | `102c6f8c…` | autoiXpert Deeplink | varchar | confirmed | include | NEU |
 | `f6970a4f…` | autoiXpert Gutachten-ID | varchar | confirmed | include | NEU; Join-Key Phase 4 |

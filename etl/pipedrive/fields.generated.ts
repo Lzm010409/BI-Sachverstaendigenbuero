@@ -28,7 +28,7 @@ export const DEAL_FIELDS = {
   VORSCHADEN_BESCHREIBUNG: "2b30a5b6f68afe5728c2aa9eb4b50075db57381a",  // status=inferred, dwh=exclude
   ALTSCHADEN_JA_NEIN: "3bc5c0f3ce4f5df55589d9dd88674dfb90d6110d",  // status=inferred, dwh=include
   ALTSCHADEN_BESCHREIBUNG: "537563a6b98dc7504f1b8142175a19232b3f3dd6",  // status=inferred, dwh=exclude
-  NUTZUNGSAUSFALL_TAGESSATZ: "215832fc2c61f065e6ad134c2a46485911fdcf28",  // status=inferred, dwh=include
+  RECHTSANWALT: "215832fc2c61f065e6ad134c2a46485911fdcf28",  // status=confirmed, dwh=include
   UNBEKANNT_4476AF41: "4476af4192da200827de0ce96e696a298372e729",  // status=needs_token, dwh=exclude
   AUTOIXPERT_DEEPLINK: "102c6f8c0eb82cace7aa8ed3e77c06dcd3485a2a",  // status=confirmed, dwh=include
   AUTOIXPERT_GUTACHTEN_ID: "f6970a4fb3ed5c0520ba2ff1c84ec3becb422659",  // status=confirmed, dwh=include

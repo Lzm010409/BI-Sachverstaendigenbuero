@@ -85,6 +85,35 @@ bei Ausbuchung>Kürzung, `gezahlt_sv=0`, Extremwert 0525/1568TG DEVK 5.407 €).
   aussagekräftig, wenn Kürzung↔Ausbuchung fallweise breiter überlappen (nicht durch
   bloßes Warten auf den Live-WF, sondern durch Abdeckung beider Seiten).
 
+### Rechtsanwalt/Kanzlei als Dimension — Versicherer × Anwalt (`sql/029`, 2026-07-17)
+
+**Befund (Inhaber):** Der Rechtsanwalt je Fall steht im Deal-Custom-Field
+`215832fc…` — die Feld-Doku hatte es **fälschlich als „Nutzungsausfall Tagessatz"**
+geraten. Der Feldwert ist die **`org_id` der Kanzlei** (Fremdschlüssel auf dieselbe
+`dim_organisation` wie der Versicherer). Damit ist **Versicherer × Anwalt kreuzbar**:
+`deal.org_id` = Versicherer, `custom_fields[215832fc]` = Anwalt. Verifiziert an echten
+Deals (152 = „Urbach + Urbach Rechtsanwälte", 128 = „Rechtsanwalt Philipp Nadler" …).
+Anwalt-Coverage im Sample hoch (bei jungen Fällen oft gesetzt, während `org_id`/
+Versicherer noch leer ist → teils bessere Abdeckung als der Versicherer).
+
+**Gebaut `sql/029` (wartet auf Coolify-UI-Deploy):**
+- `core.fact_ausbuchung` um `anwalt_org_id` erweitert (aus dem Custom-Field).
+- `core.dim_anwalt`: 57 Kanzleien, **DSGVO-Whitelist per Namensmuster**
+  (`rechtsanw|anwält|anwalt|kanzlei| & | und |partner|partg|mbb|gbr`) — trifft keine
+  Privatperson (adressbehaftete Privatnamen wie „Belinda Wilke, Weingartstr…" bleiben
+  außen vor). Kanzleien = juristische Personen, Klartext erlaubt.
+- `marts.v_anwalt` (LF4: Umsatz + Fälle + won + Forderungsverlust je Kanzlei).
+- `marts.v_versicherer_x_anwalt` (Kreuz-Matrix Fälle/Umsatz).
+- Feld-Doku korrigiert: `docs/field-mapping.json` (label „Rechtsanwalt", confirmed) →
+  `fields.generated.ts` regeneriert (`NUTZUNGSAUSFALL_TAGESSATZ` → `RECHTSANWALT`;
+  Konstante war ungenutzt, Nutzungsausfall kommt aus den Gutachten-PDFs, nicht hier).
+- **NACH DEPLOY offen:** (1) echte Coverage messen + tatsächlich referenzierte
+  Kanzleien gegenprüfen (kein Privat-Leak); (2) Dashboard „Auftraggeber/Anwälte (LF4)"
+  + Versicherer×Anwalt-Matrix bauen (Cards erst nach Deploy, da `metabase_ro` das
+  Anwalt-Feld erst über die neue core-View sieht — `raw` bleibt gesperrt).
+- **Dublette bekannt:** „Beumer & Tappert" vs „Beumer und Tappert" (Schreibvarianten
+  derselben Kanzlei) → später dedupen.
+
 ## Erledigt (deployt & live verifiziert)
 
 - **Phase 0–2** — Fundament, Infra, Pipedrive→`fact_ausbuchung`→marts. **1001 Deals** live.
