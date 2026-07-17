@@ -49,6 +49,9 @@ export const DEAL_OPTIONS = {
 } as const;
 
 export const PERSON_FIELDS = {
+  PLZ: "3ddf6b2d5dace3e6d0bbc276a159773cce31c176",  // status=confirmed, dwh=include
+  ORT: "98fc62cc2f9f30880c26a5184cd6a7ffe2e3512c",  // status=confirmed, dwh=include
+  STRASSE: "f7a6ca526a3fad10514cf6801b6ca64f8258b464",  // status=confirmed, dwh=exclude
 } as const;
 
 export const ORGANIZATION_FIELDS = {
@@ -71,6 +74,7 @@ export const DWH_EXCLUDED_KEYS: ReadonlySet<string> = new Set([
   "64fea94aefeb55264354c0afa5677f89859100af",
   "621afa76ad0e9c446f624588a0e964a6c31c8f93",
   "b189ecbd4510e9555bf8fbf5e8c2fa33159532ce",
+  "f7a6ca526a3fad10514cf6801b6ca64f8258b464",
   "f8457fc274acc8b82ae223f2c44d0dbdcf7ea755",
   "76710522ad255259f10e92543a11efd390b2a115",
   "4a19d027812882f1ebf2c05d2c0244905844c056",
