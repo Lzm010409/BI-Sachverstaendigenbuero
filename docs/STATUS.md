@@ -14,39 +14,47 @@ committet). **Zuerst diese Datei + `CLAUDE.md` lesen.**
   `git push origin claude/status-md-next-step-blbeam` **und**
   `git push origin claude/status-md-next-step-blbeam:claude/repo-deployment-setup-emf5b8`.
 - **Behalten:** `claude/phase-5-shortening-workflow-s6scak` (ungemergte Phase-5-Intake-Arbeit).
-- **OFFEN — noch zu löschen** (git-Proxy gab 403 auf `push --delete`; ggf. via GitHub-UI
-  oder erneut versuchen): `claude/sevdesk-phase-3-9a7g5k`, `claude/repo-deployment-setup-g24l0l`.
+- **NOCH ZU LÖSCHEN — nur via GitHub-UI** (git-Proxy gibt weiterhin 403 auf
+  `push --delete`, erneut geprüft 2026-07-17; GitHub-MCP hat kein Ref-Delete):
+  `claude/sevdesk-phase-3-9a7g5k`, `claude/repo-deployment-setup-g24l0l`.
 
-## Nächste Session (Handoff 2026-07-17) — Metabase-Dashboards bauen
+## ERLEDIGT (2026-07-17) — Metabase-Dashboards live (5 Dashboards, 16 Cards)
 
-**Auftrag Inhaber:** 5 Dashboards in Metabase ANLEGEN (nicht nur vorschlagen). Der
-alte `METABASE_API_KEY` ist **query-only** (POST /api/card → 403); der Inhaber stellt
-einen **schreibfähigen Admin-Key** bereit (als Env, z. B. `METABASE_ADMIN_KEY`, oder
-im Chat). Metabase: `https://metabase.gollenstede.app`, Warehouse = database id **2**.
-Query-Helfer: `scratchpad/mbq.py` (liest SQL von stdin, nutzt METABASE_API_KEY für
-/api/dataset). Zum Anlegen: `POST /api/card` (native SQL-Frage, database:2) + `POST
-/api/dashboard` + `POST /api/dashboard/:id/cards` (bzw. `/api/dashboard/:id` PUT dashcards).
+**5 Dashboards mit Cards in Metabase angelegt** (`https://metabase.gollenstede.app`,
+Warehouse = database id **2**), Sammlung **„BI — Kfz-Sachverständigenbüro"**
+(`/collection/5`). Alle 16 Cards laufen fehlerfrei gegen die Live-DB.
+- **Key-Korrektur:** Der vorhandene `METABASE_API_KEY` (User `claude_gob_laptop_RW`)
+  hat **volle Schreibrechte** (POST/PUT/DELETE /api/card + /api/dashboard) — ein
+  separater `METABASE_ADMIN_KEY` war **nicht** nötig. Die frühere „query-only/403"-
+  Annahme galt für einen älteren Key. `metabase_ro` (DB-Rolle) liest weiterhin nur
+  core/marts.
+- **Helfer:** `scratchpad/mbq.py` (native SQL via curl → /api/dataset),
+  `scratchpad/build_dashboards.py` (idempotenter Builder: Sammlung/Dashboards per
+  Name finden-oder-anlegen, Cards frisch, PUT `/api/dashboard/:id` dashcards).
 
-**Die 5 Dashboards (alle Views sind live, außer Geo = nach Redeploy):**
-1. **Durchsetzung & Kürzungen** (LF2/3): `v_durchsetzung_sevdesk`, `v_durchsetzung_echt`,
-   `v_kuerzung_echt_je_versicherer`, `v_kuerzung_sevdesk_diagnose`.
-2. **Gutachten & Totalschaden** (LF8/10): `v_totalschaden_quote`, `v_honorar_vs_schaden`,
-   `fact_gutachten` (Beurteilungs-Mix, Ø Nutzungsausfall/Reparaturdauer).
-3. **Umsatz & Zahlungsausfälle**: `v_rechnungsposition_monat`, `v_position_je_kategorie`,
-   `v_forderungsverlust_je_versicherer`, `v_forderungsverlust_monat`.
-4. **Einzugsgebiet Geo** (LF7): `v_geo_je_plzgebiet`, `v_geo_je_ort` — **LIVE & verifiziert**
-   (Deploy a523eae, 2026-07-17). Coverage 457/881 Fälle mit PLZ-Gebiet; Schwerpunkt 41/40/47.
-5. **Auftragseingang & Saisonalität** (LF9): `fact_ausbuchung` je Monat (add_time/won_time).
+**Die 5 Dashboards:**
+1. **1 · Durchsetzung & Kürzungen** (LF2/3): Kürzung je Versicherer (row),
+   Durchsetzungsquote je Versicherer (row), Durchsetzung je Fall sevDesk (row),
+   Kürzungs-Diagnose Befund-Verteilung (row). Views `v_durchsetzung_sevdesk`,
+   `v_durchsetzung_echt`, `v_kuerzung_echt_je_versicherer`, `v_kuerzung_sevdesk_diagnose`.
+2. **2 · Gutachten & Totalschaden** (LF8/10): Totalschaden-/130%-Quote je Monat (combo,
+   Quote auf rechter Achse), Honorar vs. Schadenhöhe (scatter, BVSK, >60k€ raus),
+   Beurteilungs-Mix (pie), Ø Nutzungsausfall/Reparaturdauer je Kategorie (bar). Mix-
+   Kategorie aus `ist_totalschaden`/`ueber_130_prozent`/`beurteilung='Bewertung'`
+   (Freitext-`beurteilung` ist zu unsauber für direkte Gruppierung).
+3. **3 · Umsatz & Zahlungsausfälle** (LF5): Umsatz je Monat gestapelt nach
+   Positionskategorie (bar stacked), Umsatz je Kategorie (row), Forderungsverlust je
+   Versicherer (row), Forderungsverlust je Monat (combo).
+4. **4 · Einzugsgebiet (Geo)** (LF7): Umsatz/Fälle je PLZ-Gebiet (row, ohne
+   „(unbekannt)"), Fälle je Ort (row, **DSGVO-Filter `anzahl_faelle >= 3`**,
+   Kleinstfälle ausgeblendet). Geo live (Deploy `a523eae`), Coverage 457/881,
+   Schwerpunkt PLZ 41/40/47 (Neuss/Düsseldorf/Krefeld).
+5. **5 · Auftragseingang & Saisonalität** (LF9): Auftragseingang je Monat (bar),
+   Saisonalität je Kalendermonat (bar, Ø/Jahr). **Go-Live-Import 2024-10 (372 Deals)
+   per `add_time >= 2024-11-01` ausgeblendet**, sonst verzerrt er die Saisonkurve.
 
-**Vor den Dashboards zu verifizieren:**
-- **Geo-Deploy** (`sql/026`+`027`, `a523eae`): nach Inhaber-Redeploy prüfen —
-  `raw.pipedrive_person_geo` befüllt? `v_geo_je_plzgebiet`/`v_geo_je_ort` liefern Zeilen?
-  RISIKO: ob Pipedrive-v2 `/persons` die `custom_fields` (PLZ/Ort) inline liefert. Falls
-  Coverage 0 → in `extract-persons.ts` ggf. `custom_fields`-Abruf nachrüsten. Zusätzlich
-  liefert nur ein Teil der Personen PLZ (viele `(unbekannt)` erwartbar).
-- metabase_ro liest NUR core/marts (nicht raw) — Dashboards nur auf marts/core-Views.
-- DSGVO: keine Einzelfall-Detailtabellen mit potenziell identifizierenden Kombis (Ort +
-  Kleinstfallzahl). Aggregate bevorzugen.
+**DSGVO eingehalten:** nur core/marts-Views (kein raw); Ort-Chart auf ≥3 Fälle
+aggregiert (kein identifizierender Einzelfall Ort+Kleinstzahl).
 
 ## Erledigt (deployt & live verifiziert)
 
