@@ -139,7 +139,7 @@ OneDrive läuft über SharePoint; die Session hat **keinen** M365-Datei-Zugriff
   ab. Zwei Bugs unterwegs gefixt: crashender Ingest-Container vergiftete den Deploy
   (entfernt); Spaltennamen-Mismatch `fv.ausbuchung`/`ausgebucht` ließ `CREATE VIEW`
   in `021` scheitern (Bisektion über 019/020/021).
-- **ERWEITERT (2026-07-17) — `sql/024`, wartet auf Deploy-Freigabe:** Reader jetzt
+- **ERWEITERT & DEPLOYT (2026-07-17) — `sql/024`:** Reader jetzt
   über **6 Suchbegriffe** (Schadenzahlung/Kürzung/Regulierung/Ablehnung/Abrechnung/
   SVK) + **Dateiname-Whitelist**. Wichtiger Befund: OneDrive-Suche matcht auch
   Datei-INHALT → generische Terme trafen **1528** PDFs (Abtretungen/Widerrufe); der
@@ -155,8 +155,15 @@ OneDrive läuft über SharePoint; die Session hat **keinen** M365-Datei-Zugriff
     Domänenmodell) abbildbar. Daher speichert `sql/024` **beide** Felder:
     `sachverstaendigenkosten` (50×, sevDesk-Methode) **und** `kuerzungsbetrag` (39×,
     echt-Views `v_durchsetzung_echt`/`v_kuerzung_echt_je_versicherer`).
-  - **Offene Methodenfrage an Inhaber:** nur sevDesk-berechenbare Fälle laden, oder
-    auch die 46 Altfälle per brief-`kuerzungsbetrag` (mehr Coverage, mischt Methoden)?
+  - **Inhaber-Entscheidung: Variante A** (alle 63, beide Methoden). **VERIFIZIERT
+    live:** `fact_kuerzungsereignis=70` (7+63), `v_durchsetzung_sevdesk` 18 plausible
+    Fälle (z. B. 0525/1568TG DEVK 5406,86 — sevDesk-fakturiert 6062,36 ≈ brief
+    urspruenglich_gefordert 6062,34, unabhängige Quellen auf 2 ct deckungsgleich),
+    Plausibilitäts-Bremse fängt 1 Fehl-Lesung (gezahlt>fakturiert). `v_kuerzung_echt_
+    je_versicherer` (LF2) über alle Versicherer befüllt inkl. der 46 Altfälle.
+  - **Reader nach Backfill unpublished** (sonst OCR-t der Zeitplan nächtlich alle 123).
+  - **Offen/Ausbau:** `Stellungnahme`-Schreiben (108×) als eigene LF3-Quelle
+    (setze ich Kürzungen per Stellungnahme durch?) noch nicht erfasst.
 
 ### Phase 4 (Gutachten-Fachwerte) — Reader gebaut, 11 Fälle live (2026-07-16)
 
