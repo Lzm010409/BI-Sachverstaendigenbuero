@@ -34,7 +34,8 @@ Query-Helfer: `scratchpad/mbq.py` (liest SQL von stdin, nutzt METABASE_API_KEY f
    `fact_gutachten` (Beurteilungs-Mix, Ø Nutzungsausfall/Reparaturdauer).
 3. **Umsatz & Zahlungsausfälle**: `v_rechnungsposition_monat`, `v_position_je_kategorie`,
    `v_forderungsverlust_je_versicherer`, `v_forderungsverlust_monat`.
-4. **Einzugsgebiet Geo** (LF7): `v_geo_je_plzgebiet`, `v_geo_je_ort` — ERST nach Geo-Redeploy.
+4. **Einzugsgebiet Geo** (LF7): `v_geo_je_plzgebiet`, `v_geo_je_ort` — **LIVE & verifiziert**
+   (Deploy a523eae, 2026-07-17). Coverage 457/881 Fälle mit PLZ-Gebiet; Schwerpunkt 41/40/47.
 5. **Auftragseingang & Saisonalität** (LF9): `fact_ausbuchung` je Monat (add_time/won_time).
 
 **Vor den Dashboards zu verifizieren:**
