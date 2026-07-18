@@ -1,20 +1,22 @@
 {
-  "_hinweis": "TEMPLATE für echten Deckungsbeitrag (LF1) — bitte die null-Werte durch eure Zahlen ersetzen. Ziel: DB je Fall/Auftragsart = Erlös (haben wir) − Kosten (dieses Modell). Alle Kostenwerte NETTO. Nach dem Ausfüllen sage Claude Bescheid → er baut fact_deckungsbeitrag + Views + Cards. Bis dahin bleibt LF1 auf Erlös-Proxys.",
+  "_hinweis": "Kostenmodell für echten Deckungsbeitrag (LF1). Alle Werte NETTO. DB je Fall = Erlös − (Arbeitszeit·Stundenkostensatz + gefahrene km·km_kosten + externe Kosten je Anlass + anteilige Fixkosten). Editierbar → Werte pflegen, neu deployen. Stundenkostensatz wird via Q&A mit dem Inhaber hergeleitet.",
 
-  "_anleitung": {
-    "stunden_je_gutachten": "2,5h",
-    "stundenkostensatz_netto": "müssen wir via Frage und Antwort Spiel beantworten",
-    "fixkosten_pro_monat_netto": "ca 5500€",
-    "km_kosten_netto": "0,72€",
-    "externe_kosten": "Restwertbörse: 19€, Bewertung: 11€, Vermessung: 120€"
+  "_offen": {
+    "stundenkostensatz_netto": "Noch herzuleiten (Q&A): Was kostet eine produktive Arbeitsstunde intern (Personal + Unternehmerlohn) / produktive Stunden pro Monat?"
   },
 
   "stundenkostensatz_netto": null,
-  "fixkosten_pro_monat_netto": null,
-  "km_kosten_netto": null,
+  "fixkosten_pro_monat_netto": 5500,
+  "km_kosten_netto": 0.72,
 
   "auftragsart": {
-    "Haftpflicht": { "stunden_je_gutachten": null, "externe_kosten_je_fall_netto": null },
-    "Bewertung":   { "stunden_je_gutachten": null, "externe_kosten_je_fall_netto": null }
+    "Haftpflicht": { "stunden_je_gutachten": 2.5 },
+    "Bewertung":   { "stunden_je_gutachten": 2.5 }
+  },
+
+  "externe_kosten_je_anlass_netto": {
+    "restwertboerse": 19,
+    "bewertungsabfrage": 11,
+    "vermessung": 120
   }
 }
