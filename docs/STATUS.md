@@ -225,8 +225,13 @@ Inhaber lieferte die **AGB/Honorartabelle**. Daraus:
     **Bewertung +38,5 %** (vorher −15,6 % — die Pauschal-Umlage hatte die kleinen
     Bewertungs-Erlöse künstlich ins Minus gedrückt; zeitgewichtet sind sie profitabel).
     **Cards 72/73 live umgestellt** (Inline-SQL angepasst).
+  - **WICHTIG — Migrations-Disziplin:** `sql/038` wurde am 2026-07-18 DEPLOYT (pauschale
+    Umlage 5500/30). Die Zeitgewichtung darf 038 daher NICHT mehr editieren (Drift-Schutz
+    im Runner bricht sonst den ganzen Deploy ab — ist genau einmal passiert). Sie liegt in
+    **`sql/041_deckungsbeitrag_fixumlage_zeitgewichtet.sql`** (CREATE OR REPLACE, gleiche
+    Spalten-Signatur → marts-Views ohne DROP gültig). `sql/038` = flat, `sql/041` = korrekt.
   - **Caveat:** aktueller (teils nebenberuflicher) Kostenstand; hauptberuflicher GF-Lohn
-    höbe den Stundensatz. Werte in der Fixture pflegbar. `sql/038` wartet auf Deploy
+    höbe den Stundensatz. Werte in der Fixture pflegbar. `sql/041` wartet auf Deploy
     (Cards laufen bereits via Inline-SQL).
 
 ### LF6 Durchlaufzeiten — Stufe 1 (`sql/039`, 2026-07-18) — **letzte offene Leitfrage**
@@ -267,9 +272,11 @@ JE Stage aus der Pipedrive-**Stage-Historie**.
   Dashboard 9 (v_stage_offen + v_stage_verweildauer), prüft je View auf Existenz.
 - **Stufe-2-Cards laufen erst NACH Deploy** (brauchen raw.pipedrive_deal_changelog gefüllt
   durch den Extractor im Deploy-Lauf).
-- **Deploy-Stau:** `sql/038` (Deckungsbeitrag, jetzt zeitgewichtet), `sql/039`
-  (Durchlaufzeit), **`sql/040`** (Stage-Verweildauer) + der neue Flow-Extractor warten
-  auf den nächsten Coolify-UI-Deploy. Danach `add_stage_offen_card.py` laufen.
+- **Deploy-Stand 2026-07-18:** `sql/038` (flat) + `sql/039` (Durchlaufzeit) sind DEPLOYT.
+  Der Folge-Deploy von `b556160` **schlug fehl** (Drift auf editiertem 038) → `sql/040`
+  + Flow-Extractor liefen NICHT. Fix: 038 auf flat zurückgesetzt, Zeitgewichtung nach
+  **`sql/041`** verschoben. **Offen für nächsten Deploy:** `sql/040` (Stage-Verweildauer),
+  `sql/041` (Fixumlage zeitgewichtet) + der Flow-Extractor. Danach `add_stage_offen_card.py`.
 
 ### Dashboard 8 „7 · Anwälte × Versicherer" + Kürzungsquellen-Befund (2026-07-17)
 
