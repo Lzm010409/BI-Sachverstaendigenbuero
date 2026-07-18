@@ -10,7 +10,7 @@
 
   "auftragsart": {
     "Haftpflicht": { "stunden_je_gutachten": 2.5 },
-    "Bewertung":   { "stunden_je_gutachten": 2.5 }
+    "Bewertung":   { "stunden_je_gutachten": 1.25 }
   },
 
   "externe_kosten_je_anlass_netto": {
