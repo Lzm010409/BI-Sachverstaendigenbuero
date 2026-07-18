@@ -1,11 +1,10 @@
 {
   "_hinweis": "Kostenmodell für echten Deckungsbeitrag (LF1). Alle Werte NETTO. DB je Fall = Erlös − (Arbeitszeit·Stundenkostensatz + gefahrene km·km_kosten + externe Kosten je Anlass + anteilige Fixkosten). Editierbar → Werte pflegen, neu deployen. Stundenkostensatz wird via Q&A mit dem Inhaber hergeleitet.",
 
-  "_offen": {
-    "stundenkostensatz_netto": "Noch herzuleiten (Q&A): Was kostet eine produktive Arbeitsstunde intern (Personal + Unternehmerlohn) / produktive Stunden pro Monat?"
-  },
+  "_herleitung_stundenkostensatz": "Personalkosten/Monat 5818 € (4000 GF-Privatentnahme + 3×606 Minijob) / ~110 produktive Std = ~53 €/h. Hinweis: aktueller (teils nebenberuflicher) Stand; ein hauptberuflicher GF-Lohn würde den Satz deutlich erhöhen. Fixkosten 5500 = reine Sachkosten (ohne Personal).",
 
-  "stundenkostensatz_netto": null,
+  "stundenkostensatz_netto": 53,
+  "faelle_pro_monat_umlagebasis": 30,
   "fixkosten_pro_monat_netto": 5500,
   "km_kosten_netto": 0.72,
 
