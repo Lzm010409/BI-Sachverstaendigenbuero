@@ -175,8 +175,24 @@ Kürzungs**grund** (LF2) kommt aus dem Pipedrive-Ausbuchungsgrund (69 Grundhonor
 - **READMEs je Projektteil** angelegt (Root + `sql/`, `etl/`+4 Unterordner, `scripts/`,
   `fixtures/`, `docker/`, `docs/`, `scratchpad/`; `n8n/` bestand). Erklären Funktion,
   Mechanik und Gotchas des jeweiligen Teils.
-- **Offener Deploy:** `sql/033` (Brief-Grund), `sql/034` (Perf 39s→2s), `sql/035` (Kanon)
-  sind committet auf `emf5b8`, aber noch nicht deployt → ein UI-Deploy macht sie live.
+- **`sql/033`–`035` DEPLOYT & verifiziert (b143b69):** Brief-Grund-Verknüpfung, Perf-Fix
+  (39s→**1s** live gemessen), Versicherer-Kanon (HUK-COBURG 66 Fälle sauber gruppiert).
+
+### Gewichtete Entscheidungs-Kennzahlen (`sql/036`, 2026-07-17)
+
+- **(1) Konfidenz-Gewichtung (Shrinkage/empirical Bayes)** der Durchsetzungsquote je
+  Versicherer/Anwalt: `quote_gew = (n·quote + k·µ)/(n+k)`, k=5. Kleine Stichproben (n=1-
+  Nuller) zum Gesamtmittel gezogen → faire, sortierbare Ranglisten trotz dünner Daten.
+  `marts.v_durchsetzung_versicherer_gewichtet` / `_anwalt_gewichtet`.
+- **(2) Auftraggeber-Wertigkeit (LF4)** `marts.v_anwalt_wertigkeit`: realisierter Umsatz
+  = Umsatz − Forderungsverlust; `wertigkeit_score` × konfidenz-gewichtete Durchsetzung
+  (Prior = Mittel ohne Kürzungshistorie). RA Busch 251,9 k€ top.
+- **Cards live** (Card 67 → Dashboard 2, Card 68 → Dashboard 7,
+  `scratchpad/build_gewichtet_cards.py`, Inline-SQL → korrekt vor Deploy).
+  **`sql/036` wartet auf Deploy** (gleicht die deployten Views an; Cards laufen bereits).
+- **Datenlücken für weitere Gewichtungen** (Chat 2026-07-17): Kostenmodell für echten
+  Deckungsbeitrag (LF1), BVSK-Honorartabelle (LF8), km je Fall (LF7) — als fixtures/*.json
+  bereitstellbar.
 
 ### Dashboard 8 „7 · Anwälte × Versicherer" + Kürzungsquellen-Befund (2026-07-17)
 
