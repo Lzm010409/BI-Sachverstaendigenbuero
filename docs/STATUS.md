@@ -208,10 +208,18 @@ Inhaber lieferte die **AGB/Honorartabelle**. Daraus:
 - **Cards live:** 69/70 (LF8) auf Dashboard 3, 71 (LF7) auf Dashboard 5.
 - **`sql/036` (gewichtete Kennzahlen) ebenfalls deployt** (b143b69→55e1578): Shrinkage-
   Views + `v_anwalt_wertigkeit` live.
-- **LF1 echter Deckungsbeitrag — wartet auf Kostenseite:** `fixtures/kostenmodell.json`
-  als TEMPLATE angelegt (Ø Stunden je Auftragsart, interner Stundenkostensatz, Fixkosten/
-  Monat, km-Kosten). Inhaber füllt aus → dann `fact_deckungsbeitrag` + Views + Cards.
-  (AGB = Preisseite; für DB fehlt der interne Aufwand.)
+- **LF1 Deckungsbeitrag GEBAUT (`sql/038`, 2026-07-18):** Kostenmodell vom Inhaber in
+  `fixtures/kostenmodell.json` (Stundenkostensatz **53 €/h** = Personal 5818/Mon /110h;
+  2,5 h/Fall; km **0,72 €/km**; Sachfixkosten **5500/Mon** → 183 €/Fall Umlage; externe
+  Restwert 19/Bewertung 11). `core.fact_deckungsbeitrag` (won): Erlös netto − Zeit − km −
+  externe − Fixumlage; `db_i` (nur variabel) + `db_vollkosten`. Marts je Auftragsart/
+  Versicherer(kanon)/Anwalt/Monat. **Cards 72/73 live auf Dashboard 4.**
+  - **Befund:** Ø Erlös 925 € netto, Ø DB 578 €, **Marge 62,5 %**. **Haftpflicht 63 %**,
+    **Bewertung −45 %** (verlustig — aber: 2,5 h pauschal überkostet die kurzen
+    Bewertungen; `stunden_je_gutachten` je Art differenzieren macht es exakt).
+  - **Caveat:** aktueller (teils nebenberuflicher) Kostenstand; hauptberuflicher GF-Lohn
+    höbe den Stundensatz. Werte in der Fixture pflegbar. `sql/038` wartet auf Deploy
+    (Cards laufen bereits via Inline-SQL).
 
 ### Dashboard 8 „7 · Anwälte × Versicherer" + Kürzungsquellen-Befund (2026-07-17)
 
