@@ -2,11 +2,11 @@
   "_hinweis": "TEMPLATE für echten Deckungsbeitrag (LF1) — bitte die null-Werte durch eure Zahlen ersetzen. Ziel: DB je Fall/Auftragsart = Erlös (haben wir) − Kosten (dieses Modell). Alle Kostenwerte NETTO. Nach dem Ausfüllen sage Claude Bescheid → er baut fact_deckungsbeitrag + Views + Cards. Bis dahin bleibt LF1 auf Erlös-Proxys.",
 
   "_anleitung": {
-    "stunden_je_gutachten": "Wie viele Arbeitsstunden bindet ein Fall im Schnitt (Aufnahme + Kalkulation + Schreiben + Nachgang)? Je Auftragsart getrennt schätzen.",
-    "stundenkostensatz_netto": "Was KOSTET euch eine Arbeitsstunde intern (Personal + anteilige Gemeinkosten) — NICHT der berechnete SV-Stundensatz (142,80 € ist ein Preis). Grobe Schätzung reicht.",
-    "fixkosten_pro_monat_netto": "Monatliche Fixkosten, die NICHT je Fall über den Stundensatz laufen (Miete, Software/DAT-Lizenz, Versicherungen, KFZ-Leasing …). Claude legt sie über die Fallzahl um.",
-    "km_kosten_netto": "Was kostet ein gefahrener km WIRKLICH (Sprit+Verschleiß+Abschreibung), nicht der berechnete 0,80 €/km.",
-    "externe_kosten": "Optional: durchschnittliche verauslagte Fremdkosten je Fall (Restwertbörse, Fehlerspeicher, Vermessung). Falls je Fall stark unterschiedlich, leer lassen — Claude kann sie später aus sevDesk-Belegen ziehen."
+    "stunden_je_gutachten": "2,5h",
+    "stundenkostensatz_netto": "müssen wir via Frage und Antwort Spiel beantworten",
+    "fixkosten_pro_monat_netto": "ca 5500€",
+    "km_kosten_netto": "0,72€",
+    "externe_kosten": "Restwertbörse: 19€, Bewertung: 11€, Vermessung: 120€"
   },
 
   "stundenkostensatz_netto": null,
