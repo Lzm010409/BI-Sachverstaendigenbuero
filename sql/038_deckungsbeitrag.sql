@@ -2,7 +2,7 @@
 --
 -- Kostenmodell (Inhaber, fixtures/kostenmodell.json — Konstanten hier gespiegelt):
 --   Stundenkostensatz netto = 53 €/h  (Personal 5818 €/Mon / ~110 produktive h)
---   Stunden je Gutachten    = 2,5 h
+--   Stunden je Gutachten    = Haftpflicht 2,5 h · Bewertung 1,25 h (je Auftragsart)
 --   km-Kosten netto         = 0,72 €/km  (real; berechnet werden 0,80)
 --   Externe je Anlass netto = Restwertbörse 19 · Bewertungsabfrage 11 (Vermessung 120
 --                             mangels Positions-Signal noch nicht zugeordnet)
@@ -38,7 +38,7 @@ SELECT
   COALESCE(art.auftragsart, 'Haftpflicht')                                   AS auftragsart,
   CASE WHEN fa.enthaltene_mwst IS NOT NULL THEN fa.deal_value_brutto - fa.enthaltene_mwst
        ELSE round(fa.deal_value_brutto / 1.19, 2) END                        AS erloes_netto,
-  round(2.5 * 53, 2)                                                         AS zeit_kosten,
+  round((CASE WHEN COALESCE(art.auftragsart,'Haftpflicht')='Bewertung' THEN 1.25 ELSE 2.5 END) * 53, 2) AS zeit_kosten,
   round(COALESCE(km.km, 0) * 0.72, 2)                                        AS km_kosten,
   COALESCE(ext.externe, 0)::numeric                                          AS externe_kosten,
   round(5500.0 / 30, 2)                                                      AS fix_umlage,
@@ -49,7 +49,8 @@ SELECT
   -- Vollkosten-Marge
   round((CASE WHEN fa.enthaltene_mwst IS NOT NULL THEN fa.deal_value_brutto - fa.enthaltene_mwst
               ELSE fa.deal_value_brutto / 1.19 END)
-        - 2.5*53 - COALESCE(km.km,0)*0.72 - COALESCE(ext.externe,0) - 5500.0/30, 2) AS db_vollkosten
+        - (CASE WHEN COALESCE(art.auftragsart,'Haftpflicht')='Bewertung' THEN 1.25 ELSE 2.5 END)*53
+        - COALESCE(km.km,0)*0.72 - COALESCE(ext.externe,0) - 5500.0/30, 2) AS db_vollkosten
 FROM core.fact_ausbuchung fa
 LEFT JOIN km  USING (aktenzeichen)
 LEFT JOIN ext USING (aktenzeichen)
