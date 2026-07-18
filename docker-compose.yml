@@ -31,6 +31,7 @@ services:
         { npx tsx etl/sevdesk/load-kategorien.ts;
           npx tsx etl/pipedrive/extract-organizations.ts;
           npx tsx etl/pipedrive/extract-deals.ts;
+          npx tsx etl/pipedrive/extract-deal-flow.ts;
           npx tsx etl/pipedrive/extract-persons.ts;
           npx tsx etl/sevdesk/extract-invoices.ts;
           npx tsx etl/sevdesk/extract-positions.ts;

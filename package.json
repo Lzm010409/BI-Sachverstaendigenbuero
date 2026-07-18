@@ -12,6 +12,7 @@
     "migrate": "tsx scripts/migrate.ts",
     "extract:deals": "tsx etl/pipedrive/extract-deals.ts",
     "extract:orgs": "tsx etl/pipedrive/extract-organizations.ts",
+    "extract:deal-flow": "tsx etl/pipedrive/extract-deal-flow.ts",
     "extract:invoices": "tsx etl/sevdesk/extract-invoices.ts",
     "extract:positions": "tsx etl/sevdesk/extract-positions.ts",
     "extract:vouchers": "tsx etl/sevdesk/extract-vouchers.ts",

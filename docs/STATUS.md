@@ -217,10 +217,14 @@ Inhaber lieferte die **AGB/Honorartabelle**. Daraus:
   - **Stunden je Auftragsart differenziert (`d77b764`):** Haftpflicht **2,5 h**,
     Bewertung **1,25 h** (Fixture `auftragsart.*.stunden_je_gutachten`; sql/038 + View
     lesen es je Fall). Löst die vorherige Pauschal-Überkostung der kurzen Bewertungen.
-  - **Befund:** Ø Erlös 925 € netto, Ø DB 578 €, **Haftpflicht ~63 % Marge**,
-    **Bewertung −15,6 %** (bleibt negativ — nicht die Zeit, sondern die pauschale
-    Fixkosten-Umlage 183 €/Fall über den kleinen Bewertungs-Erlös; zeitgewichtete
-    Umlage wäre die exaktere, noch offene Variante).
+  - **Fixkosten-Umlage ZEITGEWICHTET (2026-07-18):** statt pauschal 5500/30 = 183 €/Fall
+    jetzt `Stunden · (5500/110 h) = 50 €/h` → **Haftpflicht 125 € · Bewertung 62,50 €**
+    (gleiche 110-h-Basis wie der Stundensatz; Fixture-Feld `produktive_stunden_pro_monat`).
+    Ein kurzes Bewertungsgutachten trägt nur die gebundene Kapazität, nicht 1/30 des Monats.
+  - **Befund (nach Zeitgewichtung):** Ø Erlös 925 € netto, **Haftpflicht ~69 % Marge**,
+    **Bewertung +38,5 %** (vorher −15,6 % — die Pauschal-Umlage hatte die kleinen
+    Bewertungs-Erlöse künstlich ins Minus gedrückt; zeitgewichtet sind sie profitabel).
+    **Cards 72/73 live umgestellt** (Inline-SQL angepasst).
   - **Caveat:** aktueller (teils nebenberuflicher) Kostenstand; hauptberuflicher GF-Lohn
     höbe den Stundensatz. Werte in der Fixture pflegbar. `sql/038` wartet auf Deploy
     (Cards laufen bereits via Inline-SQL).
@@ -241,11 +245,31 @@ Extraktion, aus vorhandenen Pipedrive-Deals:
   (combo: Median-Linie + Volumen-Balken) — beide Inline-SQL auf `core.fact_ausbuchung`,
   **laufen schon vor dem Deploy**.
 - **Offen:** die „wo-klemmt-es"-Card auf `v_stage_offen` braucht den `sql/039`-Deploy
-  (liest raw stage_id/stage_change_time über die View). **Stufe 2** (exakte Verweildauer
-  JE Stage) bräuchte einen Flow-Extractor `extract-deal-flow` — Pipedrive liefert nur
-  den *letzten* Stage-Wechsel. Bei Bedarf separat.
-- **Deploy-Stau:** `sql/038` (Deckungsbeitrag) **und** `sql/039` (Durchlaufzeit) warten
-  auf den nächsten Coolify-UI-Deploy.
+  (liest raw stage_id/stage_change_time über die View).
+
+**LF6 Stufe 2 GEBAUT (`sql/040` + Flow-Extractor, 2026-07-18):** exakte Verweildauer
+JE Stage aus der Pipedrive-**Stage-Historie**.
+- **Extractor `etl/pipedrive/extract-deal-flow.ts`** (npm `extract:deal-flow`): holt je
+  Deal `GET /v1/deals/{id}/changelog` (Cursor-Pagination, v1 — Changelog gibt's nur dort),
+  speichert das komplette `data[]`-Array UNVERÄNDERT in **`raw.pipedrive_deal_changelog`**
+  (raw heilig). Inkrementell über `deal_update_time` (nur neue/geänderte Deals → günstiger
+  Nightly). In die **Deploy-Kette** (`docker-compose.yml`) nach `extract-deals` eingehängt.
+- **`sql/040`:** `core.fact_stage_change` (unnest, field_key='stage_id') →
+  `core.fact_stage_segment` (Gaps-and-Islands: je Deal Aufenthaltssegmente aus add_time
+  + Wechseln + terminal bis won_time/now) → `marts.v_stage_verweildauer` (Median/Ø/P90
+  je Stage). **Segment-Logik mit synthetischen Daten verifiziert** (6→4d, 7→15d, 8→21d,
+  terminal 0d korrekt; Nicht-Stage-Changes ignoriert). Typecheck grün.
+- **Feldnamen-Vorbehalt:** Timestamp je Changelog-Eintrag heißt lt. Doku `time`; die View
+  liest tolerant `time`ODER`log_time`. **Nach dem ersten echten Extrakt am Sample bestätigen**
+  (wie sevDesk); ggf. per neuer Migration verengen. Pipedrive-Doku ist per WebFetch 403 —
+  Endpunkt/Shape per WebSearch bestätigt (changelog, Cursor, field_key/old_value/new_value).
+- **Post-Deploy-Card:** `scratchpad/add_stage_offen_card.py` hängt beide Stage-Cards an
+  Dashboard 9 (v_stage_offen + v_stage_verweildauer), prüft je View auf Existenz.
+- **Stufe-2-Cards laufen erst NACH Deploy** (brauchen raw.pipedrive_deal_changelog gefüllt
+  durch den Extractor im Deploy-Lauf).
+- **Deploy-Stau:** `sql/038` (Deckungsbeitrag, jetzt zeitgewichtet), `sql/039`
+  (Durchlaufzeit), **`sql/040`** (Stage-Verweildauer) + der neue Flow-Extractor warten
+  auf den nächsten Coolify-UI-Deploy. Danach `add_stage_offen_card.py` laufen.
 
 ### Dashboard 8 „7 · Anwälte × Versicherer" + Kürzungsquellen-Befund (2026-07-17)
 

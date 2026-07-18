@@ -3,8 +3,10 @@
 
   "_herleitung_stundenkostensatz": "Personalkosten/Monat 5818 € (4000 GF-Privatentnahme + 3×606 Minijob) / ~110 produktive Std = ~53 €/h. Hinweis: aktueller (teils nebenberuflicher) Stand; ein hauptberuflicher GF-Lohn würde den Satz deutlich erhöhen. Fixkosten 5500 = reine Sachkosten (ohne Personal).",
 
+  "_herleitung_fixumlage": "Fixkosten werden ZEITGEWICHTET umgelegt: fix_satz_pro_stunde = fixkosten_pro_monat_netto / produktive_stunden_pro_monat = 5500/110 = 50 €/h. Umlage je Fall = stunden_je_gutachten × fix_satz_pro_stunde (Haftpflicht 125 €, Bewertung 62,50 €). Gleiche 110-h-Basis wie der Stundensatz — ein kurzes Bewertungsgutachten trägt nur die Fixkosten, die es an Kapazität bindet, statt pauschal 1/30 des Monats.",
+
   "stundenkostensatz_netto": 53,
-  "faelle_pro_monat_umlagebasis": 30,
+  "produktive_stunden_pro_monat": 110,
   "fixkosten_pro_monat_netto": 5500,
   "km_kosten_netto": 0.72,
 

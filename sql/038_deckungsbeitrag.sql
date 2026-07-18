@@ -6,7 +6,11 @@
 --   km-Kosten netto         = 0,72 €/km  (real; berechnet werden 0,80)
 --   Externe je Anlass netto = Restwertbörse 19 · Bewertungsabfrage 11 (Vermessung 120
 --                             mangels Positions-Signal noch nicht zugeordnet)
---   Sachfixkosten           = 5500 €/Mon (ohne Personal) → Umlage 5500/30 = 183,33 €/Fall
+--   Sachfixkosten           = 5500 €/Mon (ohne Personal), ZEITGEWICHTET umgelegt:
+--                             fix_satz = 5500/110 h = 50 €/h → Umlage = Stunden·50
+--                             (Haftpflicht 125 € · Bewertung 62,50 €). Ein kurzes
+--                             Bewertungsgutachten trägt nur seine gebundene Kapazität,
+--                             nicht pauschal 1/30 des Monats.
 --
 -- Zwei Sichten:
 --   db_i         = Erlös − echte variable Kosten (km + externe)   [Deckungsbeitrag I]
@@ -41,16 +45,17 @@ SELECT
   round((CASE WHEN COALESCE(art.auftragsart,'Haftpflicht')='Bewertung' THEN 1.25 ELSE 2.5 END) * 53, 2) AS zeit_kosten,
   round(COALESCE(km.km, 0) * 0.72, 2)                                        AS km_kosten,
   COALESCE(ext.externe, 0)::numeric                                          AS externe_kosten,
-  round(5500.0 / 30, 2)                                                      AS fix_umlage,
+  round((CASE WHEN COALESCE(art.auftragsart,'Haftpflicht')='Bewertung' THEN 1.25 ELSE 2.5 END) * (5500.0/110), 2) AS fix_umlage,
   -- Deckungsbeitrag I (nur echte variable Kosten)
   round((CASE WHEN fa.enthaltene_mwst IS NOT NULL THEN fa.deal_value_brutto - fa.enthaltene_mwst
               ELSE fa.deal_value_brutto / 1.19 END)
         - COALESCE(km.km,0)*0.72 - COALESCE(ext.externe,0), 2)               AS db_i,
-  -- Vollkosten-Marge
+  -- Vollkosten-Marge (Fixkosten zeitgewichtet: Stunden · 5500/110)
   round((CASE WHEN fa.enthaltene_mwst IS NOT NULL THEN fa.deal_value_brutto - fa.enthaltene_mwst
               ELSE fa.deal_value_brutto / 1.19 END)
         - (CASE WHEN COALESCE(art.auftragsart,'Haftpflicht')='Bewertung' THEN 1.25 ELSE 2.5 END)*53
-        - COALESCE(km.km,0)*0.72 - COALESCE(ext.externe,0) - 5500.0/30, 2) AS db_vollkosten
+        - COALESCE(km.km,0)*0.72 - COALESCE(ext.externe,0)
+        - (CASE WHEN COALESCE(art.auftragsart,'Haftpflicht')='Bewertung' THEN 1.25 ELSE 2.5 END)*(5500.0/110), 2) AS db_vollkosten
 FROM core.fact_ausbuchung fa
 LEFT JOIN km  USING (aktenzeichen)
 LEFT JOIN ext USING (aktenzeichen)
