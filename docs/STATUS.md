@@ -272,11 +272,13 @@ JE Stage aus der Pipedrive-**Stage-Historie**.
   Dashboard 9 (v_stage_offen + v_stage_verweildauer), prüft je View auf Existenz.
 - **Stufe-2-Cards laufen erst NACH Deploy** (brauchen raw.pipedrive_deal_changelog gefüllt
   durch den Extractor im Deploy-Lauf).
-- **Deploy-Stand 2026-07-18:** `sql/038` (flat) + `sql/039` (Durchlaufzeit) sind DEPLOYT.
-  Der Folge-Deploy von `b556160` **schlug fehl** (Drift auf editiertem 038) → `sql/040`
-  + Flow-Extractor liefen NICHT. Fix: 038 auf flat zurückgesetzt, Zeitgewichtung nach
-  **`sql/041`** verschoben. **Offen für nächsten Deploy:** `sql/040` (Stage-Verweildauer),
-  `sql/041` (Fixumlage zeitgewichtet) + der Flow-Extractor. Danach `add_stage_offen_card.py`.
+- **Deploy-Verlauf 2026-07-18:** `154549d` (12:14) ✓ → `sql/038` flat + `sql/039`.
+  `b556160` (12:35) ✗ Drift auf editiertem 038. `a5c47e4` (12:40) ✓ → **`sql/040`
+  (Stage-Verweildauer) + `sql/041` (Fixumlage zeitgewichtet) angewandt, Flow-Extractor
+  gelaufen.** Verifiziert: `fact_deckungsbeitrag` fix_umlage = 125/62,50; `v_stage_verweildauer`
+  mit 2858 Segmenten (Median Versendet 30 d, Klage 247 d) → **`time`-Feld am echten
+  Changelog bestätigt** (sensible Dauern, nicht null). **Alle LF6-Cards live** (Dashboard 9:
+  74 Kennzahlen, 75 Trend, 76 wo-klemmt-es, 77 Verweildauer je Stage). **Deploy-Stau leer.**
 
 ### Dashboard 8 „7 · Anwälte × Versicherer" + Kürzungsquellen-Befund (2026-07-17)
 

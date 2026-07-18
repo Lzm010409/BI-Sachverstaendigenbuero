@@ -17,7 +17,14 @@ def q(s): return {"database":DB,"type":"native","native":{"query":s}}
 def view_ok(view):
     r=api("POST","/api/dataset",q("SELECT 1 FROM %s LIMIT 1"%view))
     return bool(r.get("data",{}).get("rows") is not None and "error" not in r)
+def on_dashboard_by_name(name):
+    d=api("GET","/api/dashboard/%d"%DASH)
+    for dc in d.get("dashcards",[]):
+        if (dc.get("card") or {}).get("name")==name: return True
+    return False
 def make_card(name,sql,viz,desc):
+    if on_dashboard_by_name(name):
+        print("card '%s' schon auf Dashboard, nicht neu angelegt"%name[:45]); return None
     r=api("POST","/api/card",{"name":name,"display":"table","dataset_query":q(sql),
           "visualization_settings":viz,"collection_id":COLL,"description":desc})
     print("card",r.get("id"),name[:45]); return r["id"]
@@ -47,7 +54,7 @@ FROM marts.v_stage_offen ORDER BY order_nr""",
       "LF6 Stufe 1 — offene (nicht bezahlte) Fälle je AKTUELLEM Stage und wie lange "
       "sie dort liegen. Hoher Bestand + hohes Alter = Engpass. Pipedrive liefert hier "
       "nur den letzten Stage-Wechsel → Alter ab diesem Wechsel.")
-    append(c,6)
+    if c: append(c,6)
 else:
     print("v_stage_offen fehlt — sql/039 noch nicht deployt, übersprungen.")
 
@@ -60,7 +67,7 @@ FROM marts.v_stage_verweildauer ORDER BY order_nr""",{},
       "LF6 Stufe 2 — exakte Verweildauer JE Stage aus der Pipedrive-Stage-Historie "
       "(Changelog). Zeigt, in welchem Bearbeitungsschritt die Zeit wirklich liegt. "
       "Median statt Ø (Langläufer/Klage verzerren den Schnitt).")
-    append(c,6)
+    if c: append(c,6)
 else:
     print("v_stage_verweildauer fehlt — sql/040 + Flow-Extractor noch nicht gelaufen, übersprungen.")
 
