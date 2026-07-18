@@ -194,6 +194,25 @@ Kürzungs**grund** (LF2) kommt aus dem Pipedrive-Ausbuchungsgrund (69 Grundhonor
   Deckungsbeitrag (LF1), BVSK-Honorartabelle (LF8), km je Fall (LF7) — als fixtures/*.json
   bereitstellbar.
 
+### Honorar-Konformität (LF8) + Umsatz je km (LF7) + Kostenmodell (2026-07-18)
+
+Inhaber lieferte die **AGB/Honorartabelle**. Daraus:
+- **`fixtures/honorartabelle.json`** (64 Grundhonorar-Stufen netto/brutto + Nebenkosten-
+  sätze: Foto 1,79 · Schreib 2,14 · Porto 17,85 · EDV 14,88 · Bewertung 11,90 · Restwert
+  23,21 · **SV-Std 142,80** · Fahrt 0,80 €/km · Pauschale „zu weit" 50 € netto).
+- **`sql/037` DEPLOYT & verifiziert (55e1578):** `core.dim_honorar_tabelle`,
+  **`marts.v_honorar_konformitaet` (LF8)** — fakturiert vs. Tabelle: **423 konform / 94
+  über / 36 unter** (Parse an echten Rechnungen 76 % exakt bestätigt). Schadenhöhe* =
+  Rep.-netto+Wertminderung bzw. WBW brutto (Totalschaden). **`marts.v_umsatz_je_km`
+  (LF7)** — km aus Fahrtkosten-Position; PLZ 47 51,88 €/km vs. 41 29,30 vs. 40 28,36.
+- **Cards live:** 69/70 (LF8) auf Dashboard 3, 71 (LF7) auf Dashboard 5.
+- **`sql/036` (gewichtete Kennzahlen) ebenfalls deployt** (b143b69→55e1578): Shrinkage-
+  Views + `v_anwalt_wertigkeit` live.
+- **LF1 echter Deckungsbeitrag — wartet auf Kostenseite:** `fixtures/kostenmodell.json`
+  als TEMPLATE angelegt (Ø Stunden je Auftragsart, interner Stundenkostensatz, Fixkosten/
+  Monat, km-Kosten). Inhaber füllt aus → dann `fact_deckungsbeitrag` + Views + Cards.
+  (AGB = Preisseite; für DB fehlt der interne Aufwand.)
+
 ### Dashboard 8 „7 · Anwälte × Versicherer" + Kürzungsquellen-Befund (2026-07-17)
 
 **Dashboard 8** (`scratchpad/build_anwalt_kreuz.py`, 6 Cards, Inline-SQL): Schadenhöhe/
