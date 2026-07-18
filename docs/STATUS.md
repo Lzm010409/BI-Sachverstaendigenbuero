@@ -214,12 +214,38 @@ Inhaber lieferte die **AGB/Honorartabelle**. Daraus:
   Restwert 19/Bewertung 11). `core.fact_deckungsbeitrag` (won): Erlös netto − Zeit − km −
   externe − Fixumlage; `db_i` (nur variabel) + `db_vollkosten`. Marts je Auftragsart/
   Versicherer(kanon)/Anwalt/Monat. **Cards 72/73 live auf Dashboard 4.**
-  - **Befund:** Ø Erlös 925 € netto, Ø DB 578 €, **Marge 62,5 %**. **Haftpflicht 63 %**,
-    **Bewertung −45 %** (verlustig — aber: 2,5 h pauschal überkostet die kurzen
-    Bewertungen; `stunden_je_gutachten` je Art differenzieren macht es exakt).
+  - **Stunden je Auftragsart differenziert (`d77b764`):** Haftpflicht **2,5 h**,
+    Bewertung **1,25 h** (Fixture `auftragsart.*.stunden_je_gutachten`; sql/038 + View
+    lesen es je Fall). Löst die vorherige Pauschal-Überkostung der kurzen Bewertungen.
+  - **Befund:** Ø Erlös 925 € netto, Ø DB 578 €, **Haftpflicht ~63 % Marge**,
+    **Bewertung −15,6 %** (bleibt negativ — nicht die Zeit, sondern die pauschale
+    Fixkosten-Umlage 183 €/Fall über den kleinen Bewertungs-Erlös; zeitgewichtete
+    Umlage wäre die exaktere, noch offene Variante).
   - **Caveat:** aktueller (teils nebenberuflicher) Kostenstand; hauptberuflicher GF-Lohn
     höbe den Stundensatz. Werte in der Fixture pflegbar. `sql/038` wartet auf Deploy
     (Cards laufen bereits via Inline-SQL).
+
+### LF6 Durchlaufzeiten — Stufe 1 (`sql/039`, 2026-07-18) — **letzte offene Leitfrage**
+
+Damit sind **alle 10 Leitfragen** in Metabase abgebildet. `sql/039` ohne neue
+Extraktion, aus vorhandenen Pipedrive-Deals:
+- **`core.dim_stage`** (6 Aufgenommen … 11 Klage), **`core.fact_durchlauf`**
+  (add_time→won_time, `durchlaufzeit_tage`), **`marts.v_durchlaufzeit`**,
+  **`v_durchlaufzeit_monat`**, **`v_stage_offen`** (offene Fälle je aktuellem Stage +
+  Alterung = „wo klemmt es").
+- **Befund (520 won-Fälle ab 2024-11):** Median **52 Tage**, Ø 74, P90 155.
+  Monats-Mediane 33–88 Tage. Klage-Langläufer ziehen den Ø hoch → Median ist die
+  ehrliche Zahl.
+- **Neues Dashboard 9 „7 · Durchlaufzeiten & Engpässe (LF6)"** (`scratchpad/
+  build_durchlaufzeit.py`): Card 74 Kennzahlen (Median/Ø/P90), Card 75 Trend je Monat
+  (combo: Median-Linie + Volumen-Balken) — beide Inline-SQL auf `core.fact_ausbuchung`,
+  **laufen schon vor dem Deploy**.
+- **Offen:** die „wo-klemmt-es"-Card auf `v_stage_offen` braucht den `sql/039`-Deploy
+  (liest raw stage_id/stage_change_time über die View). **Stufe 2** (exakte Verweildauer
+  JE Stage) bräuchte einen Flow-Extractor `extract-deal-flow` — Pipedrive liefert nur
+  den *letzten* Stage-Wechsel. Bei Bedarf separat.
+- **Deploy-Stau:** `sql/038` (Deckungsbeitrag) **und** `sql/039` (Durchlaufzeit) warten
+  auf den nächsten Coolify-UI-Deploy.
 
 ### Dashboard 8 „7 · Anwälte × Versicherer" + Kürzungsquellen-Befund (2026-07-17)
 
