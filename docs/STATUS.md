@@ -258,8 +258,11 @@ vom Geschädigten — Gebiet = Fall-Ursprung.)
   PLZ-Gebiet (≥5)", Card 79 „Median-Zahldauer je Gebiet". Befund: 41 Neuss (Median 35 d,
   Durchsetzung 71 %), 40 Düsseldorf (27 d, 92 %), 47 Krefeld (30 d, **54 %** + langsamste
   Ø 75 d). Nur 41 (n=78) solide, 40/47 (n≈12) indikativ.
-- **Nach Deploy offen (Task 10):** Metabase-**Karte** (Lat/Lon aus dim_plz_geo) +
-  **Heatmap-Pivot** je plz4 → `scratchpad/build_geo_karte.py` (folgt).
+- **DEPLOYT & LIVE (2026-07-19):** `sql/042+043` + Loader gelaufen (dim_plz_geo = 3144
+  Centroide), Personen voll neu extrahiert (plz4 gefüllt). `v_geo_je_plz4` = 27 Gebiete
+  (≥3 Fälle). **Karte (Card 80, pin, Lat/Lon)** + **Heatmap-Pivot (Card 81, farbcodiert)**
+  auf Dashboard 5 live (`scratchpad/build_geo_karte.py`). Top-Gebiet 4146 Neuss
+  (164 Fälle, 176k€). Karte = Volumen/Umsatz; Raten (Zahldauer/Kürzung) bleiben 2-stellig.
 
 ### LF6 Durchlaufzeiten (Fortsetzung)
 - **`core.dim_stage`** (6 Aufgenommen … 11 Klage), **`core.fact_durchlauf`**
