@@ -34,6 +34,7 @@ services:
           npx tsx etl/pipedrive/extract-deals.ts;
           npx tsx etl/pipedrive/extract-deal-flow.ts;
           npx tsx etl/pipedrive/extract-persons.ts;
+          npx tsx etl/gutachten/extract-fachwerte.ts;
           npx tsx etl/sevdesk/extract-invoices.ts;
           npx tsx etl/sevdesk/extract-positions.ts;
           npx tsx etl/sevdesk/extract-vouchers.ts;
@@ -49,6 +50,8 @@ services:
       SEVDESK_API_TOKEN: ${SEVDESK_API_TOKEN}
       SEVDESK_API_BASE: ${SEVDESK_API_BASE:-https://my.sevdesk.de/api/v1}
       SEVDESK_SINCE: ${SEVDESK_SINCE:-2024-01-01}
+      AUTOIXPERT_API_TOKEN: ${AUTOIXPERT_API_TOKEN}
+      AUTOIXPERT_API_BASE: ${AUTOIXPERT_API_BASE:-https://app.autoixpert.de/externalApi/v1}
     networks:
       - warehouse
     restart: "no"

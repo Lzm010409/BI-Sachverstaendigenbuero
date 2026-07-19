@@ -264,6 +264,29 @@ vom Geschädigten — Gebiet = Fall-Ursprung.)
   auf Dashboard 5 live (`scratchpad/build_geo_karte.py`). Top-Gebiet 4146 Neuss
   (164 Fälle, 176k€). Karte = Volumen/Umsatz; Raten (Zahldauer/Kürzung) bleiben 2-stellig.
 
+### Laufender Gutachten-Feed statt Einmal-Backfill (2026-07-19)
+Die Fachwerte (WBW/Restwert/Wertminderung/Reparaturkosten/Nutzungsausfall/Reparaturdauer/
+Totalschaden) kamen bisher NUR aus Backfill-Migrationen (019/022/023/025) → eingefroren
+(alle 591 `extracted_at` = 2026-07, **362 won-Fälle ohne Fachwerte**, wächst). Jetzt
+**inkrementell** über die autoiXpert-externalApi — **headless, kein Azure/M365**:
+- **Route (im n8n-Workflow „DAT-Kalkulation Download" verifiziert):**
+  Deal → `AUTOIXPERT_GUTACHTEN_ID` → `GET /reports/{id}` (documents[]) →
+  `GET /reports/{id}/documents/{docId}/download` (PDF) → `pdf-parse` (Textlayer) →
+  `parse-fachwerte.ts` → Upsert `raw.gutachten_fachwerte`.
+- **Neu:** `etl/gutachten/{fetch-pdf,pdf-text,extract-fachwerte}.ts`, Dep `pdf-parse`
+  (Import via `pdf-parse/lib/pdf-parse.js` wg. ESM-Debug-Bug), npm `extract:fachwerte`.
+  `sql/044`: `raw.gutachten_fetch_log` (kein Dauer-Retry für Fälle ohne Gutachten) +
+  `marts.v_gutachten_abdeckung` (Füllstand). In Deploy-Kette (nach extract-persons),
+  **token-gated** (ohne `AUTOIXPERT_API_TOKEN` No-op). `AUTOIXPERT_API_TOKEN/BASE` in
+  etl-Service-Env ergänzt (Coolify-Secret setzen!). Batch 150/Lauf.
+- **Verifiziert lokal:** typecheck grün, No-op-Pfad ok, PDF→Text→parse-Kette läuft
+  (82 KB aus echtem PDF). **Im Container zu prüfen (self-diagnosing):** der echte
+  Dokumenttyp des Haupt-Gutachtens — `pickGutachtenDoc()` wählt heuristisch (Typ-
+  Kandidaten + Titel), loggt bei Fehlschlag die verfügbaren Typen in `gutachten_fetch_log`.
+  Falls der Typ anders heißt → eine Zeile in `TYP_KANDIDATEN` ergänzen.
+- **Voraussetzung:** `AUTOIXPERT_API_TOKEN` als Coolify-Secret der etl-App. Ohne ihn
+  läuft der Schritt als No-op (kein Fehler).
+
 ### LF6 Durchlaufzeiten (Fortsetzung)
 - **`core.dim_stage`** (6 Aufgenommen … 11 Klage), **`core.fact_durchlauf`**
   (add_time→won_time, `durchlaufzeit_tage`), **`marts.v_durchlaufzeit`**,

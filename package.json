@@ -20,6 +20,7 @@
     "load:kategorien": "tsx etl/sevdesk/load-kategorien.ts",
     "load:plz-geo": "tsx etl/pipedrive/load-plz-geo.ts",
     "extract:gutachten": "tsx etl/autoixpert/extract-gutachten.ts",
+    "extract:fachwerte": "tsx etl/gutachten/extract-fachwerte.ts",
     "test:golden": "tsx scripts/test-golden.ts",
     "test:sevdesk": "tsx scripts/test-sevdesk.ts",
     "load:golden": "tsx scripts/load-golden.ts",
@@ -28,12 +29,13 @@
     "generate:fields": "tsx scripts/generate-fields.ts"
   },
   "dependencies": {
+    "pdf-parse": "^1.1.1",
     "pg": "^8.13.1",
     "tsx": "^4.19.2"
   },
   "devDependencies": {
-    "typescript": "^5.7.2",
     "@types/node": "^22.10.2",
-    "@types/pg": "^8.11.10"
+    "@types/pg": "^8.11.10",
+    "typescript": "^5.7.2"
   }
 }
