@@ -29,6 +29,7 @@ services:
       - >
         npx tsx scripts/migrate.ts &&
         { npx tsx etl/sevdesk/load-kategorien.ts;
+          npx tsx etl/pipedrive/load-plz-geo.ts;
           npx tsx etl/pipedrive/extract-organizations.ts;
           npx tsx etl/pipedrive/extract-deals.ts;
           npx tsx etl/pipedrive/extract-deal-flow.ts;

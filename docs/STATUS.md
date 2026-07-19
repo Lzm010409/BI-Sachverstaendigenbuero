@@ -238,6 +238,30 @@ Inhaber lieferte die **AGB/Honorartabelle**. Daraus:
 
 Damit sind **alle 10 Leitfragen** in Metabase abgebildet. `sql/039` ohne neue
 Extraktion, aus vorhandenen Pipedrive-Deals:
+
+### Geo-Ausbau: 4-stellige PLZ + Karte + Zahldauer/Kürzung (2026-07-19)
+Inhaber gab die 2-stellige DSGVO-Grenze frei → **4-stellige PLZ** (4 von 5 Ziffern,
+kein Adressbezug; Anzeige nur ab 3 Fällen). Kernfrage: regulieren Versicherer in
+manchen Regionen langsamer / kürzen mehr? (Bezahlt wird vom **Versicherer**, nicht
+vom Geschädigten — Gebiet = Fall-Ursprung.)
+- **Extractor** `extract-persons.ts`: speichert zusätzlich `plz4`. **`sql/042`**: raw-
+  Spalte `plz4`, **Wasserstand `pipedrive_person_geo` genullt** (nächster Deploy zieht
+  Personen VOLL neu), Referenz-Tabelle `core.dim_plz_geo` (Centroid je plz4).
+- **Fixture** `fixtures/plz4_geo.json` = **3144 plz4-Centroide** (Lat/Lon), aggregiert aus
+  öffentlichem WZB-Datensatz (public domain, kein Personenbezug). Loader
+  `etl/pipedrive/load-plz-geo.ts` (Bulk-unnest) → in Deploy-Kette. **`sql/043`**:
+  `v_fall_geo`/`dim_fall_geo` um plz4, **`v_geo_je_plz4`** (Volumen + Lat/Lon, ≥3 Fälle)
+  für Karte/Heatmap. Typecheck grün.
+- **Statistik-Ehrlichkeit:** plz4 nur für **Volumen/Umsatz** (robust). **Raten** (Zahldauer,
+  Kürzung, Durchsetzung) bleiben 2-stellig — feiner zerfällt in Einzelfälle.
+- **Schon live (Dashboard 5, bestehende Views):** Card 78 „Zahldauer & Regulierung je
+  PLZ-Gebiet (≥5)", Card 79 „Median-Zahldauer je Gebiet". Befund: 41 Neuss (Median 35 d,
+  Durchsetzung 71 %), 40 Düsseldorf (27 d, 92 %), 47 Krefeld (30 d, **54 %** + langsamste
+  Ø 75 d). Nur 41 (n=78) solide, 40/47 (n≈12) indikativ.
+- **Nach Deploy offen (Task 10):** Metabase-**Karte** (Lat/Lon aus dim_plz_geo) +
+  **Heatmap-Pivot** je plz4 → `scratchpad/build_geo_karte.py` (folgt).
+
+### LF6 Durchlaufzeiten (Fortsetzung)
 - **`core.dim_stage`** (6 Aufgenommen … 11 Klage), **`core.fact_durchlauf`**
   (add_time→won_time, `durchlaufzeit_tage`), **`marts.v_durchlaufzeit`**,
   **`v_durchlaufzeit_monat`**, **`v_stage_offen`** (offene Fälle je aktuellem Stage +

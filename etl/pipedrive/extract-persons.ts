@@ -35,6 +35,17 @@ function toPlzGebiet(raw: unknown): string | null {
   return digits.length >= 2 ? digits.slice(0, 2) : null;
 }
 
+/**
+ * PLZ -> 4-stelliges PLZ-Gebiet. Vom Inhaber freigegeben (feineres Einzugsgebiet,
+ * LF7): 4 von 5 Ziffern bleiben Gebiet, nie die volle 5-stellige PLZ, keine Adresse.
+ * Auswertungen aggregieren zusätzlich mit Mindestfallzahl.
+ */
+function toPlz4(raw: unknown): string | null {
+  if (raw == null) return null;
+  const digits = String(raw).replace(/\D/g, "");
+  return digits.length >= 4 ? digits.slice(0, 4) : null;
+}
+
 function toOrt(raw: unknown): string | null {
   if (typeof raw !== "string") return null;
   const t = raw.trim();
@@ -66,14 +77,17 @@ async function main(): Promise<void> {
       async (person) => {
         const cf = person.custom_fields ?? {};
         const plzGebiet = toPlzGebiet(cf[PERSON_FIELDS.PLZ]);
+        const plz4 = toPlz4(cf[PERSON_FIELDS.PLZ]);
         const ort = toOrt(cf[PERSON_FIELDS.ORT]);
-        // Nur die zwei PII-armen Geo-Felder — niemals Name/Straße/Kontakt.
+        // Nur die PII-armen Geo-Felder (Gebiet/Ort) — niemals Name/Straße/Kontakt
+        // und nie die volle 5-stellige PLZ.
         await pool.query(
-          `INSERT INTO raw.pipedrive_person_geo (person_id, plz_gebiet, ort, extracted_at)
-             VALUES ($1, $2, $3, now())
+          `INSERT INTO raw.pipedrive_person_geo (person_id, plz_gebiet, plz4, ort, extracted_at)
+             VALUES ($1, $2, $3, $4, now())
            ON CONFLICT (person_id) DO UPDATE
-             SET plz_gebiet = EXCLUDED.plz_gebiet, ort = EXCLUDED.ort, extracted_at = now()`,
-          [person.id, plzGebiet, ort],
+             SET plz_gebiet = EXCLUDED.plz_gebiet, plz4 = EXCLUDED.plz4,
+                 ort = EXCLUDED.ort, extracted_at = now()`,
+          [person.id, plzGebiet, plz4, ort],
         );
       },
     );
