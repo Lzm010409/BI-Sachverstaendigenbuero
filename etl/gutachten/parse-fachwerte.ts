@@ -61,15 +61,17 @@ export function parseFachwerte(rawText: string, aktenzeichenHint?: string): Fach
   // „Wiederbeschaffungswert", „Restwert", „Nutzungsausfall", „Beurteilung"), weil
   // pdf-parse Prosa zuverlässig linearisiert; die zweispaltige Zusammenfassungs-Tabelle
   // (S. 2) ordnet es dagegen um. Zweitanker = das Tabellenformat (falls Prosa fehlt).
+  // HINWEIS: pdf-parse hängt in der Zusammenfassung Label und Betrag OHNE Leerzeichen
+  // aneinander („MwSt. (371,87 €)2.329,07 €") — daher überall \s* (nicht \s+) vor der Zahl.
   const reparaturkosten_netto =
-    firstNum(t, /Reparaturkosten\s+netto\s+([\d.,]+)/i) ??            // Gesamtsummen-Block
-    firstNum(t, /Reparaturkosten\s+ohne\s+MwSt\.?\s+([\d.,]+)\s*€/i); // Zusammenfassung
+    firstNum(t, /Reparaturkosten\s+ohne\s+MwSt\.\s*([\d.,]+)\s*€/i) ??  // Zusammenfassung
+    firstNum(t, /Reparaturkosten\s+netto\s*([\d.,]+)/i);                // Gesamtsummen-Block
   const reparaturkosten_brutto =
-    firstNum(t, /Reparaturkosten\s+brutto\s+([\d.,]+)/i) ??
-    firstNum(t, /Reparaturkosten\s+inkl\.?\s+MwSt\.?\s*\([^)]*\)\s+([\d.,]+)\s*€/i);
+    firstNum(t, /Reparaturkosten\s+inkl\.?\s+MwSt\.\s*\([^)]*\)\s*([\d.,]+)\s*€/i) ??
+    firstNum(t, /Reparaturkosten\s+brutto\s*([\d.,]+)/i);
 
   const schadenhoehe_brutto =
-    firstNum(t, /Schadenh[öo]he\s+inkl\.?\s+MwSt\.?\s*\([^)]*\)\s+([\d.,]+)\s*€/i);
+    firstNum(t, /Schadenh[öo]he\s+inkl\.?\s+MwSt\.\s*\([^)]*\)\s*([\d.,]+)\s*€/i);
 
   // Wertminderung: nur wenn ausgewiesen (oft „(keiner)" -> 0).
   const wertminderung = /Merkantiler Minderwert\s*\(kein/i.test(t)
@@ -79,7 +81,7 @@ export function parseFachwerte(rawText: string, aktenzeichenHint?: string): Fach
   // WBW brutto: Fließtext „Wiederbeschaffungswert: 3.800 €"; sonst Tabellenform mit Klammer.
   const wiederbeschaffungswert =
     firstNum(t, /Wiederbeschaffungswert\s*:\s*([\d.,]+)\s*€/i) ??
-    firstNum(t, /Wiederbeschaffungswert\s*\([^)]*\)\s+([\d.,]+)\s*€/i);
+    firstNum(t, /Wiederbeschaffungswert\s*\([^)]*\)\s*([\d.,]+)\s*€/i);
 
   const nutzungsausfall_tagessatz = firstNum(t, /Entsch[äa]digung\s+pro\s+(?:Ausfall)?[Tt]ag(?:\s*\([^)]*\))?\s*:?\s*([\d.,]+)\s*€/i);
 
