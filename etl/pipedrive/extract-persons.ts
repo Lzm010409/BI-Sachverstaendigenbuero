@@ -17,6 +17,8 @@
  */
 import { makePool } from "../db.js";
 import { paginate } from "./client.js";
+import { sanitizeForJsonb } from "./sanitize.js";
+import { logRun } from "../sevdesk/run-log.js";
 import { PERSON_FIELDS } from "./fields.generated.js";
 
 const SOURCE = "pipedrive_person_geo";
@@ -48,7 +50,8 @@ function toPlz4(raw: unknown): string | null {
 
 function toOrt(raw: unknown): string | null {
   if (typeof raw !== "string") return null;
-  const t = raw.trim();
+  // NUL/verwaiste Surrogate entfernen — sonst kippt der Insert (siehe sanitize.ts).
+  const t = sanitizeForJsonb(raw.trim()).value;
   return t.length ? t : null;
 }
 
@@ -103,7 +106,11 @@ async function main(): Promise<void> {
       [SOURCE, newWm],
     );
 
+    await logRun(pool, SOURCE, "ok", count, null);
     console.log(`Fertig: ${count} Personen-Geodaten. Wasserstand: ${newWm ?? "—"}`);
+  } catch (err) {
+    await logRun(pool, SOURCE, "error", null, err instanceof Error ? err.message : String(err));
+    throw err;
   } finally {
     await pool.end();
   }

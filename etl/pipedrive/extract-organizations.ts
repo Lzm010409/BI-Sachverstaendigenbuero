@@ -5,6 +5,8 @@
  */
 import { makePool } from "../db.js";
 import { paginate } from "./client.js";
+import { sanitizeForJsonb } from "./sanitize.js";
+import { logRun } from "../sevdesk/run-log.js";
 
 const SOURCE = "pipedrive_organizations";
 
@@ -33,16 +35,20 @@ async function main(): Promise<void> {
       `Extrahiere Organisationen${since ? ` seit ${params.updated_since}` : " (voll)"} …`,
     );
 
+    let sanitized = 0;
     const { count, maxUpdateTime } = await paginate<Org>(
       "organizations",
       params,
       async (org) => {
+        // NUL/verwaiste Surrogate entfernen — sonst kippt der jsonb-Insert (siehe sanitize.ts).
+        const { value, changed } = sanitizeForJsonb(org);
+        if (changed) sanitized++;
         await pool.query(
           `INSERT INTO raw.pipedrive_organizations (id, payload, extracted_at)
              VALUES ($1, $2, now())
            ON CONFLICT (id) DO UPDATE
              SET payload = EXCLUDED.payload, extracted_at = now()`,
-          [org.id, org],
+          [value.id, value],
         );
       },
     );
@@ -58,7 +64,13 @@ async function main(): Promise<void> {
       [SOURCE, newWm],
     );
 
-    console.log(`Fertig: ${count} Organisationen. Wasserstand: ${newWm ?? "—"}`);
+    await logRun(pool, SOURCE, "ok", count, sanitized ? `sanitized=${sanitized}` : null);
+    console.log(
+      `Fertig: ${count} Organisationen${sanitized ? ` (${sanitized} bereinigt)` : ""}. Wasserstand: ${newWm ?? "—"}`,
+    );
+  } catch (err) {
+    await logRun(pool, SOURCE, "error", null, err instanceof Error ? err.message : String(err));
+    throw err;
   } finally {
     await pool.end();
   }

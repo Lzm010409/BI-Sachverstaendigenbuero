@@ -13,6 +13,10 @@
  * geändertem Deal). v1-Endpunkt, weil die Changelog-Historie nur dort existiert.
  */
 import { makePool } from "../db.js";
+import { sanitizeForJsonb } from "./sanitize.js";
+import { logRun } from "../sevdesk/run-log.js";
+
+const SOURCE = "pipedrive_deal_changelog";
 
 interface DealRow {
   deal_id: number;
@@ -95,8 +99,12 @@ async function main(): Promise<void> {
 
     console.log(`Changelog-Extraktion: ${rows.length} Deals zu holen …`);
     let done = 0;
+    let sanitized = 0;
     for (const r of rows) {
       const entries = await fetchChangelog(r.deal_id);
+      // NUL/verwaiste Surrogate entfernen — sonst kippt der jsonb-Insert (siehe sanitize.ts).
+      const { value, changed } = sanitizeForJsonb(entries);
+      if (changed) sanitized++;
       await pool.query(
         `INSERT INTO raw.pipedrive_deal_changelog
            (deal_id, deal_update_time, entry_count, payload, extracted_at)
@@ -106,13 +114,19 @@ async function main(): Promise<void> {
                entry_count      = EXCLUDED.entry_count,
                payload          = EXCLUDED.payload,
                extracted_at     = now()`,
-        [r.deal_id, r.update_time, entries.length, JSON.stringify(entries)],
+        [r.deal_id, r.update_time, value.length, JSON.stringify(value)],
       );
       done++;
       if (done % 50 === 0) console.log(`  … ${done}/${rows.length}`);
     }
 
-    console.log(`Fertig: ${done} Deals mit Changelog aktualisiert.`);
+    await logRun(pool, SOURCE, "ok", done, sanitized ? `sanitized=${sanitized}` : null);
+    console.log(
+      `Fertig: ${done} Deals mit Changelog aktualisiert${sanitized ? ` (${sanitized} bereinigt)` : ""}.`,
+    );
+  } catch (err) {
+    await logRun(pool, SOURCE, "error", null, err instanceof Error ? err.message : String(err));
+    throw err;
   } finally {
     await pool.end();
   }
