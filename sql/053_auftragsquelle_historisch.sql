@@ -42,8 +42,13 @@ SELECT
 FROM je_fall
 GROUP BY 1, 2;
 
--- Abdeckung über beide Quellen
-CREATE OR REPLACE VIEW marts.v_auftragsquelle_abdeckung AS
+-- Abdeckung über beide Quellen.
+-- DROP zwingend: 052 hatte hier als 4. Spalte `anzahl_quellen`; diese Sicht
+-- benennt sie in `aus_historik` um und ergänzt `aus_autoixpert`. CREATE OR REPLACE
+-- VIEW darf bestehende Spalten NICHT umbenennen/umordnen (nur hinten anfügen) —
+-- sonst bricht die Migration mit "cannot change name of view column" ab.
+DROP VIEW IF EXISTS marts.v_auftragsquelle_abdeckung;
+CREATE VIEW marts.v_auftragsquelle_abdeckung AS
 SELECT
   count(*)                                                                 AS won_faelle,
   count(*) FILTER (WHERE h.aktenzeichen IS NOT NULL OR f.intermediary_id IS NOT NULL) AS mit_quelle,

@@ -105,6 +105,19 @@ async function main(): Promise<void> {
         console.log("ok");
       } catch (err) {
         await client.query("ROLLBACK");
+        // Fehler persistieren: der ETL-Container ist one-shot, stdout ist nach dem
+        // Lauf weg. So steht der genaue Fehler in marts.v_etl_run und ist per
+        // Metabase lesbar. core._etl_run existiert ab Migration 007; fehlt sie auf
+        // einer frischen DB, wird der Insert stillschweigend übersprungen.
+        const msg = `${file}: ${err instanceof Error ? err.message : String(err)}`;
+        try {
+          await client.query(
+            "INSERT INTO core._etl_run (source, status, rows, error) VALUES ('migrate', 'error', NULL, $1)",
+            [msg.slice(0, 500)],
+          );
+        } catch {
+          /* _etl_run evtl. noch nicht vorhanden — dann nur stderr */
+        }
         throw err;
       }
     }
