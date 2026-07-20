@@ -1,8 +1,8 @@
 {
   "_hinweis": "Zielwerte für die Soll-Ist-Sicht im Management-Cockpit. ZUM ÄNDERN: nur die 'ziel'-Zahl anpassen und committen — der nächste (tägliche) Deploy übernimmt es automatisch. richtung='hoch' (höher ist besser) oder 'niedrig' (niedriger ist besser).",
   "ziele": [
-    { "kennzahl": "durchsetzung",  "label": "Durchsetzungsquote %",         "ziel": 85,    "richtung": "hoch",    "ord": 1 },
-    { "kennzahl": "umsatz",        "label": "Monatsumsatz € (Vormonat)",     "ziel": 45000, "richtung": "hoch",    "ord": 2 },
+    { "kennzahl": "durchsetzung",  "label": "Durchsetzungsquote %",         "ziel": 90,    "richtung": "hoch",    "ord": 1 },
+    { "kennzahl": "umsatz",        "label": "Monatsumsatz € (Vormonat)",     "ziel": 30000, "richtung": "hoch",    "ord": 2 },
     { "kennzahl": "durchlaufzeit", "label": "Median Durchlaufzeit (Tage)",   "ziel": 45,    "richtung": "niedrig", "ord": 3 },
     { "kennzahl": "konformitaet",  "label": "Honorar-Konformität %",         "ziel": 85,    "richtung": "hoch",    "ord": 4 }
   ]
