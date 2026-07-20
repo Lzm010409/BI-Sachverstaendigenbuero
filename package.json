@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit",
     "migrate": "tsx scripts/migrate.ts",
     "extract:deals": "tsx etl/pipedrive/extract-deals.ts",
+    "extract:deleted-deals": "tsx etl/pipedrive/extract-deleted-deals.ts",
     "extract:orgs": "tsx etl/pipedrive/extract-organizations.ts",
     "extract:deal-flow": "tsx etl/pipedrive/extract-deal-flow.ts",
     "extract:invoices": "tsx etl/sevdesk/extract-invoices.ts",
