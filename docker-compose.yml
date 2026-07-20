@@ -35,6 +35,7 @@ services:
           npx tsx etl/pipedrive/extract-deal-flow.ts;
           npx tsx etl/pipedrive/extract-persons.ts;
           npx tsx etl/gutachten/extract-fachwerte.ts;
+          npx tsx etl/autoixpert/extract-gutachten.ts;
           npx tsx etl/sevdesk/extract-invoices.ts;
           npx tsx etl/sevdesk/extract-positions.ts;
           npx tsx etl/sevdesk/extract-vouchers.ts;
