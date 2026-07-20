@@ -49,35 +49,49 @@ export function parseFachwerte(rawText: string, aktenzeichenHint?: string): Fach
   const azMatch = t.toUpperCase().match(/\b(\d{4}\/\d+TG)\b/);
   const aktenzeichen: string | null = azMatch?.[1] ?? aktenzeichenHint ?? null;
 
-  // Reparaturkosten: „... ohne MwSt. EUR 14.035,01" / „... mit 19,00 % MwSt. EUR 16.701,66"
-  const reparaturkosten_netto = firstNum(t, /Reparaturkosten\s+ohne\s+MwSt\.?\s+EUR\s+([\d.,]+)/i);
-  const reparaturkosten_brutto = firstNum(t, /Reparaturkosten\s+mit\s+[\d.,]+\s*%\s*MwSt\.?\s+EUR\s+([\d.,]+)/i);
+  // Format der „Zusammenfassung" (autoiXpert, Stand 2026, an echten PDFs verifiziert):
+  //   „Reparaturkosten ohne MwSt.   1.957,20 €"          (Betrag + € nachgestellt, KEIN EUR)
+  //   „Reparaturkosten inkl. MwSt. (371,87 €)   2.329,07 €"  (Klammerbetrag überspringen)
+  //   „Wiederbeschaffungswert (differenzbesteuert)   3.800,00 €"
+  //   „Nutzungsausfall Entschädigung pro Tag (Gruppe A)   23,00 €"
+  //   „Reparaturdauer   ca. 2 Arbeitstage"
+  // Beträge sind brutto (Domänenregel). Bewertungen (Oldtimer) tragen den Wert oft nur
+  // als Note/Bild → dann bleiben die Zahlen null, beurteilung = „Bewertung".
+  const reparaturkosten_netto = firstNum(t, /Reparaturkosten\s+ohne\s+MwSt\.?\s+([\d.,]+)\s*€/i);
+  const reparaturkosten_brutto = firstNum(t, /Reparaturkosten\s+inkl\.?\s+MwSt\.?\s*\([^)]*\)\s+([\d.,]+)\s*€/i);
 
-  const schadenhoehe_brutto = firstNum(t, /Schadenh[öo]he\s+mit\s+[\d.,]+\s*%\s*MwSt\.?\s+EUR\s+([\d.,]+)/i);
+  const schadenhoehe_brutto = firstNum(t, /Schadenh[öo]he\s+inkl\.?\s+MwSt\.?\s*\([^)]*\)\s+([\d.,]+)\s*€/i);
 
-  const wertminderung = firstNum(t, /Wertminderung\s+(?:\(netto\)\s+)?EUR\s+([\d.,]+)/i);
+  // Wertminderung: nur wenn ausgewiesen (oft „keiner"/„(keiner)").
+  const wertminderung = /Merkantiler Minderwert\s*\(kein/i.test(t)
+    ? 0
+    : firstNum(t, /(?:Merkantiler\s+)?Minderwert(?:\s*\([^)]*\))?\s+([\d.,]+)\s*€/i);
 
-  // WBW: „Wiederbeschaffungswert mit 19,00 % MwSt. (regelbesteuert) EUR 65.000,00"
-  // oder differenzbesteuert; tolerant bis zum ersten „EUR <zahl>" (erste Fundstelle
-  // = Zusammenfassung auf S. 2, vor dem WBW-Fließtext). [\s\S] statt [^E], sonst
-  // schlucken die „e" in „regelbesteuert" den Match (i-Flag macht [^E] = [^Ee]).
-  const wiederbeschaffungswert = firstNum(t, /Wiederbeschaffungswert[\s\S]{0,80}?EUR\s+([\d.,]+)/i);
+  // WBW brutto: die (differenz-/regelbesteuerte) Fundstelle mit Klammer, NICHT „ohne MwSt.".
+  const wiederbeschaffungswert = firstNum(t, /Wiederbeschaffungswert\s*\([^)]*\)\s+([\d.,]+)\s*€/i);
 
-  const nutzungsausfall_tagessatz = firstNum(t, /Nutzungsausfall\s+pro\s+Tag\s+EUR\s+([\d.,]+)/i);
+  const nutzungsausfall_tagessatz = firstNum(t, /Entsch[äa]digung\s+pro\s+(?:Ausfall)?[Tt]ag(?:\s*\([^)]*\))?\s*:?\s*([\d.,]+)\s*€/i);
 
   const reparaturdauer_tage = (() => {
-    const m = t.match(/Reparaturdauer\s+in\s+Arbeitstagen\s+(\d+)/i);
+    const m = t.match(/Reparaturdauer\s+(?:ca\.?\s*)?(\d+)\s*Arbeitstag/i);
     return m ? Number(m[1]) : null;
   })();
 
-  // Restwert: explizit „nicht ermittelt" -> null (kein Totalschaden). Sonst Betrag.
+  // Restwert: explizit „nicht ermittelt" -> null. Sonst Betrag (auch „Restwert: 1.089,00 €").
   const restwert = /Restwert\s+wurde\s+nicht\s+ermittelt/i.test(t)
     ? null
-    : firstNum(t, /Restwert(?:\s*\(brutto\))?\s+EUR\s+([\d.,]+)/i);
+    : firstNum(t, /Restwert\s*:?\s*(?:\(brutto\)\s*)?([\d.,]+)\s*€/i);
 
-  const beurteilungMatch = t.match(/Beurteilung\s+([A-Za-zÄÖÜäöü0-9%\-\s]{3,40}?)\s+(?:Wiederbeschaffungswert|Reparaturdauer|Schadenh|EUR)/i);
-  const beurteilungTxt = beurteilungMatch?.[1];
-  const beurteilung: string | null = beurteilungTxt ? beurteilungTxt.trim() : null;
+  // Beurteilung: „Schadenklasse: Reparaturschaden|Totalschaden" (Seite Beurteilung) bzw.
+  // „Es handelt sich um einen …schaden" (Zusammenfassung); sonst Fahrzeugbewertung.
+  const beurteilung: string | null = (() => {
+    const sk = t.match(/Schadenklasse\s*:?\s*([A-Za-zÄÖÜäöüß]+schaden)/i);
+    if (sk?.[1]) return sk[1];
+    const eh = t.match(/Es handelt sich um einen\s+([A-Za-zÄÖÜäöüß]+schaden)/i);
+    if (eh?.[1]) return eh[1];
+    if (/Fahrzeugbewertung|Bewertungsergebnis|Wertsch[äa]tzung/i.test(t)) return "Bewertung";
+    return null;
+  })();
 
   return {
     aktenzeichen,

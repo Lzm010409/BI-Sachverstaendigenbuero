@@ -285,6 +285,17 @@ Totalschaden) kamen bisher NUR aus Backfill-Migrationen (019/022/023/025) → ei
   404 (kein `report`-Dokument) werden die verfügbaren Typen in `gutachten_fetch_log` geloggt.
 - **Verifiziert lokal:** typecheck grün, No-op-Pfad ok, PDF→Text→parse-Kette läuft
   (82 KB aus echtem PDF).
+- **PARSER-KORREKTUR (2026-07-20, nach 1. Live-Lauf):** Der erste Feed-Lauf schrieb 19
+  Müll-Zeilen (beurteilung='der', alle Werte NULL). Ursache: `parse-fachwerte.ts` war für
+  ein Format `„… EUR <Betrag>"` gebaut; die ECHTEN autoiXpert-Zusammenfassungen haben
+  `„<Betrag> €"` und andere Labels (`inkl. MwSt.`, `(differenzbesteuert)`), und die
+  beurteilung-Regex fing das Fließtext-„der" aus „Bei der Beurteilung der Reparaturdauer".
+  (Der Backfill 025 hatte per LLM-Subagenten geparst, nicht mit diesem Parser — daher fiel
+  es nie auf.) Parser an ZWEI echten PDFs (Haftpflicht + Bewertung, via M365-Textlayer)
+  neu geschrieben & getestet: Haftpflicht liefert alle Werte korrekt, Bewertung →
+  beurteilung='Bewertung' (Wert steht dort nur als Note/Bild). **`sql/045`** löscht die
+  19 Müll-Zeilen (nur `quelle_datei LIKE 'autoixpert:%'`, Backfill unberührt) + leert das
+  fetch-log → nächster Lauf zieht sie korrekt neu. **Wartet auf Deploy.**
 - **Voraussetzung:** `AUTOIXPERT_API_TOKEN` als Coolify-Secret der etl-App. Ohne ihn
   läuft der Schritt als No-op (kein Fehler).
 
