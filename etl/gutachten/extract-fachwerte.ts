@@ -81,13 +81,20 @@ async function main(): Promise<void> {
         // (kein Name/VIN/Kennzeichen). Wird gesammelt und unter Schlüssel '#DIAG' abgelegt.
         if (diag.length < 6) {
           const nt = text.replace(/\s+/g, " ");
-          const win = (label: string) => {
-            const i = nt.indexOf(label);
-            return i < 0 ? `${label}=∅` : `${nt.slice(i, i + 55)}`;
-          };
-          diag.push(a.aktenzeichen + ": " +
-            ["Wiederbeschaffungswert", "Reparaturkosten", "Schadenhöhe", "Restwert", "Arbeitstag"]
-              .map(win).join(" · "));
+          // Fenster ab „Zusammenfassung" bis vor das nächste „Aktenzeichen" (dort steht am
+          // Blockende das Kennzeichen — das bleibt DRAUSSEN). Zeigt die Summentabelle so,
+          // wie pdf-parse sie linearisiert. Fallback: Kontext um „Wiederbeschaffungswert".
+          const z = nt.indexOf("Zusammenfassung");
+          let snip: string;
+          if (z >= 0) {
+            const after = nt.slice(z + 15);
+            const cut = after.indexOf("Aktenzeichen");
+            snip = (cut > 0 ? after.slice(0, cut) : after.slice(0, 500));
+          } else {
+            const w = nt.indexOf("Wiederbeschaffungswert");
+            snip = w >= 0 ? nt.slice(w, w + 220) : "(kein Summenblock gefunden)";
+          }
+          diag.push(a.aktenzeichen + ": " + snip.slice(0, 480));
         }
         // Nur speichern, wenn wenigstens EIN Fachwert/Klassifikation erkannt wurde.
         const hatWert = fw.beurteilung != null || fw.wiederbeschaffungswert != null ||
