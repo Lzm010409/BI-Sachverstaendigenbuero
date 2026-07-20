@@ -57,30 +57,44 @@ export function parseFachwerte(rawText: string, aktenzeichenHint?: string): Fach
   //   „Reparaturdauer   ca. 2 Arbeitstage"
   // Beträge sind brutto (Domänenregel). Bewertungen (Oldtimer) tragen den Wert oft nur
   // als Note/Bild → dann bleiben die Zahlen null, beurteilung = „Bewertung".
-  const reparaturkosten_netto = firstNum(t, /Reparaturkosten\s+ohne\s+MwSt\.?\s+([\d.,]+)\s*€/i);
-  const reparaturkosten_brutto = firstNum(t, /Reparaturkosten\s+inkl\.?\s+MwSt\.?\s*\([^)]*\)\s+([\d.,]+)\s*€/i);
+  // ANKER-STRATEGIE: primär auf die FLIESSTEXT-Vorkommen (Seiten „Gesamtsummen",
+  // „Wiederbeschaffungswert", „Restwert", „Nutzungsausfall", „Beurteilung"), weil
+  // pdf-parse Prosa zuverlässig linearisiert; die zweispaltige Zusammenfassungs-Tabelle
+  // (S. 2) ordnet es dagegen um. Zweitanker = das Tabellenformat (falls Prosa fehlt).
+  const reparaturkosten_netto =
+    firstNum(t, /Reparaturkosten\s+netto\s+([\d.,]+)/i) ??            // Gesamtsummen-Block
+    firstNum(t, /Reparaturkosten\s+ohne\s+MwSt\.?\s+([\d.,]+)\s*€/i); // Zusammenfassung
+  const reparaturkosten_brutto =
+    firstNum(t, /Reparaturkosten\s+brutto\s+([\d.,]+)/i) ??
+    firstNum(t, /Reparaturkosten\s+inkl\.?\s+MwSt\.?\s*\([^)]*\)\s+([\d.,]+)\s*€/i);
 
-  const schadenhoehe_brutto = firstNum(t, /Schadenh[öo]he\s+inkl\.?\s+MwSt\.?\s*\([^)]*\)\s+([\d.,]+)\s*€/i);
+  const schadenhoehe_brutto =
+    firstNum(t, /Schadenh[öo]he\s+inkl\.?\s+MwSt\.?\s*\([^)]*\)\s+([\d.,]+)\s*€/i);
 
-  // Wertminderung: nur wenn ausgewiesen (oft „keiner"/„(keiner)").
+  // Wertminderung: nur wenn ausgewiesen (oft „(keiner)" -> 0).
   const wertminderung = /Merkantiler Minderwert\s*\(kein/i.test(t)
     ? 0
-    : firstNum(t, /(?:Merkantiler\s+)?Minderwert(?:\s*\([^)]*\))?\s+([\d.,]+)\s*€/i);
+    : firstNum(t, /Minderwert(?:\s*\([^)]*\))?\s*:?\s*([\d.,]+)\s*€/i);
 
-  // WBW brutto: die (differenz-/regelbesteuerte) Fundstelle mit Klammer, NICHT „ohne MwSt.".
-  const wiederbeschaffungswert = firstNum(t, /Wiederbeschaffungswert\s*\([^)]*\)\s+([\d.,]+)\s*€/i);
+  // WBW brutto: Fließtext „Wiederbeschaffungswert: 3.800 €"; sonst Tabellenform mit Klammer.
+  const wiederbeschaffungswert =
+    firstNum(t, /Wiederbeschaffungswert\s*:\s*([\d.,]+)\s*€/i) ??
+    firstNum(t, /Wiederbeschaffungswert\s*\([^)]*\)\s+([\d.,]+)\s*€/i);
 
   const nutzungsausfall_tagessatz = firstNum(t, /Entsch[äa]digung\s+pro\s+(?:Ausfall)?[Tt]ag(?:\s*\([^)]*\))?\s*:?\s*([\d.,]+)\s*€/i);
 
+  // „Voraussichtlich ca. 2 Arbeitstage" (Fließtext); sonst Tabellen-Label.
   const reparaturdauer_tage = (() => {
-    const m = t.match(/Reparaturdauer\s+(?:ca\.?\s*)?(\d+)\s*Arbeitstag/i);
-    return m ? Number(m[1]) : null;
+    const m = t.match(/ca\.\s*(\d+)\s*Arbeitstag/i)
+          ?? t.match(/Reparaturdauer\s+(?:ca\.?\s*)?(\d+)\s*Arbeitstag/i);
+    return m?.[1] ? Number(m[1]) : null;
   })();
 
-  // Restwert: explizit „nicht ermittelt" -> null. Sonst Betrag (auch „Restwert: 1.089,00 €").
+  // Restwert: „nicht ermittelt" -> null. Sonst „Restwert: 1.089,00 €" (Fließtext) / Tabelle.
   const restwert = /Restwert\s+wurde\s+nicht\s+ermittelt/i.test(t)
     ? null
-    : firstNum(t, /Restwert\s*:?\s*(?:\(brutto\)\s*)?([\d.,]+)\s*€/i);
+    : (firstNum(t, /Restwert\s*:\s*([\d.,]+)\s*€/i) ??
+       firstNum(t, /Restwert\s*(?:\(brutto\)\s*)?([\d.,]+)\s*€/i));
 
   // Beurteilung: „Schadenklasse: Reparaturschaden|Totalschaden" (Seite Beurteilung) bzw.
   // „Es handelt sich um einen …schaden" (Zusammenfassung); sonst Fahrzeugbewertung.
