@@ -16,7 +16,7 @@
  * Wasserstand in raw._sync_state (source='pipedrive_person_geo').
  */
 import { makePool } from "../db.js";
-import { paginate } from "./client.js";
+import { paginate, toUpdatedSince } from "./client.js";
 import { sanitizeForJsonb } from "./sanitize.js";
 import { logRun } from "../sevdesk/run-log.js";
 import { PERSON_FIELDS } from "./fields.generated.js";
@@ -68,7 +68,7 @@ async function main(): Promise<void> {
       sort_by: "update_time",
       sort_direction: "asc",
     };
-    if (since) params.updated_since = new Date(since).toISOString();
+    if (since) params.updated_since = toUpdatedSince(since);
 
     console.log(
       `Extrahiere Personen-Geodaten${since ? ` seit ${params.updated_since}` : " (voll)"} …`,

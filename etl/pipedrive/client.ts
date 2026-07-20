@@ -23,6 +23,17 @@ const BASE = () => {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+/**
+ * Formatiert einen Zeitpunkt für Pipedrive v2 `updated_since`. Pipedrive validiert
+ * RFC3339 OHNE Millisekunden (z. B. 2025-01-01T10:20:00Z); `Date.toISOString()`
+ * liefert aber `…:00.000Z`. Seit ~15.07.2026 lehnt Pipedrive das mit HTTP 400
+ * ("updated_since: This value is not a valid datetime") ab — dadurch fror die
+ * inkrementelle Extraktion ein. Millisekunden also entfernen.
+ */
+export function toUpdatedSince(since: string | Date): string {
+  return new Date(since).toISOString().replace(/\.\d{3}Z$/, "Z");
+}
+
 interface PageResponse<T> {
   success: boolean;
   data: T[] | null;
