@@ -38,6 +38,10 @@ async function main(): Promise<void> {
     console.log("AUTOIXPERT_API_TOKEN nicht gesetzt — überspringe Gutachten-Feed.");
     return;
   }
+  // Jahrgangs-Untergrenze (2-stellig aus dem Aktenzeichen MMJJ, = echter Fall-Jahrgang,
+  // NICHT das Pipedrive-add_time). Default '26' = ab 2026; per Env justierbar. Ältere
+  // Lücken lässt der Backfill; sie bewusst nicht erneut anfassen (Inhaber-Vorgabe).
+  const minJJ = process.env.GUTACHTEN_MIN_JJ ?? "26";
   const pool = makePool();
   try {
     const { rows } = await pool.query<Aufgabe>(
@@ -48,12 +52,13 @@ async function main(): Promise<void> {
           WHERE nullif(trim(d.payload->'custom_fields'->>$1),'') IS NOT NULL
             AND upper(regexp_replace(d.payload->>'title','\\s','','g')) ~ '^\\d{4}/\\d+TG$'
        ) q
-       WHERE aktenzeichen NOT IN (SELECT aktenzeichen FROM raw.gutachten_fachwerte)
+       WHERE substr(aktenzeichen, 3, 2) >= $2   -- Jahrgang >= Untergrenze (z. B. '26')
+         AND aktenzeichen NOT IN (SELECT aktenzeichen FROM raw.gutachten_fachwerte)
          AND aktenzeichen NOT IN (
                SELECT aktenzeichen FROM raw.gutachten_fetch_log
                 WHERE status <> 'ok' AND attempted_at > now() - INTERVAL '21 days')
        ORDER BY aktenzeichen`,
-      [DEAL_FIELDS.AUTOIXPERT_GUTACHTEN_ID],
+      [DEAL_FIELDS.AUTOIXPERT_GUTACHTEN_ID, minJJ],
     );
 
     const gesamt = rows.length;

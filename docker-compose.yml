@@ -52,6 +52,7 @@ services:
       SEVDESK_SINCE: ${SEVDESK_SINCE:-2024-01-01}
       AUTOIXPERT_API_TOKEN: ${AUTOIXPERT_API_TOKEN}
       AUTOIXPERT_API_BASE: ${AUTOIXPERT_API_BASE:-https://app.autoixpert.de/externalApi/v1}
+      GUTACHTEN_MIN_JJ: ${GUTACHTEN_MIN_JJ:-26}
     networks:
       - warehouse
     restart: "no"
