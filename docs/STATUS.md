@@ -279,11 +279,12 @@ Totalschaden) kamen bisher NUR aus Backfill-Migrationen (019/022/023/025) → ei
   `marts.v_gutachten_abdeckung` (Füllstand). In Deploy-Kette (nach extract-persons),
   **token-gated** (ohne `AUTOIXPERT_API_TOKEN` No-op). `AUTOIXPERT_API_TOKEN/BASE` in
   etl-Service-Env ergänzt (Coolify-Secret setzen!). Batch 150/Lauf.
+- **Dokumenttyp bestätigt (offizielle autoiXpert-Doku):** Haupt-Gutachten = Typ **`report`**
+  (gilt für Haftpflicht UND Bewertung). Download direkt per dokumentiertem Shortcut
+  `GET /reports/{id}/documents/report/download?format=pdf` — keine Heuristik mehr. Bei
+  404 (kein `report`-Dokument) werden die verfügbaren Typen in `gutachten_fetch_log` geloggt.
 - **Verifiziert lokal:** typecheck grün, No-op-Pfad ok, PDF→Text→parse-Kette läuft
-  (82 KB aus echtem PDF). **Im Container zu prüfen (self-diagnosing):** der echte
-  Dokumenttyp des Haupt-Gutachtens — `pickGutachtenDoc()` wählt heuristisch (Typ-
-  Kandidaten + Titel), loggt bei Fehlschlag die verfügbaren Typen in `gutachten_fetch_log`.
-  Falls der Typ anders heißt → eine Zeile in `TYP_KANDIDATEN` ergänzen.
+  (82 KB aus echtem PDF).
 - **Voraussetzung:** `AUTOIXPERT_API_TOKEN` als Coolify-Secret der etl-App. Ohne ihn
   läuft der Schritt als No-op (kein Fehler).
 

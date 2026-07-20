@@ -1,17 +1,16 @@
 /**
  * fetch-pdf.ts — lädt das Gutachten-PDF eines autoiXpert-Reports über die externalApi.
  *
- * Endpunkte (gegen den LIVE-n8n-Workflow „autoiXpert DAT-Kalkulation Download"
- * verifiziert, nicht aus dem Gedächtnis):
- *   GET /externalApi/v1/reports/{id}                       -> Report inkl. documents[]
- *   GET /externalApi/v1/reports/{id}/documents/{docId}/download  -> PDF (Binary)
- *   Auth: Bearer <AUTOIXPERT_API_TOKEN>
+ * Endpunkte (gegen die offizielle autoiXpert-Doku „Gutachten-Dokumente / API" geprüft):
+ *   GET /reports/{id}/documents/report/download?format=pdf   -> Gutachten-PDF (Binary)
+ *   GET /reports/{id}                                          -> Report inkl. documents[]
+ *   Auth: Authorization: Bearer <AUTOIXPERT_API_TOKEN>
  *
- * Die Fachwerte (WBW/Restwert/Wertminderung/…) stehen auf der „Zusammenfassung"-Seite
- * des HAUPT-Gutachtens — NICHT in den Anhang-Dokumenten (dat_damage_calculation etc.).
- * Der richtige Dokumenttyp-Name ist API-seitig nicht 100 % dokumentiert, daher wählt
- * pickGutachtenDoc() heuristisch (Typ-Kandidaten + Titel-Match) und liefert bei
- * Misserfolg die verfügbaren Dokumente zurück — self-diagnosing wie der n8n-Workflow.
+ * Dokumenttyp: die Doku listet den HAUPT-Gutachten-Typ eindeutig als `report` (gilt für
+ * Haftpflicht UND Bewertung — das Dokument heißt immer `report`; report.type unterscheidet
+ * liability/valuation, nicht der Dokumenttyp). Die Fachwerte-„Zusammenfassung" steht in
+ * diesem `report`-PDF. Wir laden es direkt per Typ-Shortcut; nur wenn keins existiert,
+ * holen wir das Report-Objekt, um die verfügbaren Typen fürs Log zu protokollieren.
  *
  * Läuft im Coolify-etl-Container (app.autoixpert.de dort erreichbar). NUR GET.
  */
@@ -25,34 +24,6 @@ function conf(): { base: string; token: string } {
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-const norm = (s: unknown) => String(s ?? "").toLowerCase().replace(/[^a-z]/g, "");
-
-// Kandidaten für den Typ des Haupt-Gutachtens (das die Zusammenfassungsseite enthält).
-// Anhänge wie dat_damage_calculation/custom_residual_value_bid_list bewusst NICHT.
-const TYP_KANDIDATEN = [
-  "expertreport", "report", "gutachten", "liabilityreport", "valuationreport",
-  "appraisalreport", "damagereport", "expertise",
-].map(norm);
-const TITEL_MATCH = /gutachten|bewertung|haftpflicht|schadengutachten/i;
-
-export interface DocPick {
-  documentId: string | null;
-  type: string | null;
-  title: string | null;
-  available: Array<{ type: string; title: string }>;
-}
-
-/** Wählt aus documents[] das Haupt-Gutachten (Typ-Kandidat, sonst Titel-Match). */
-export function pickGutachtenDoc(report: Json): DocPick {
-  const docs = Array.isArray(report.documents) ? (report.documents as Json[]) : [];
-  const available = docs.map((d) => ({ type: String(d?.type ?? ""), title: String(d?.title ?? "") }));
-  const id = (d: Json) => (d?.id ?? d?._id) as string | undefined;
-
-  let hit = docs.find((d) => TYP_KANDIDATEN.includes(norm(d?.type)));
-  if (!hit) hit = docs.find((d) => TITEL_MATCH.test(String(d?.title ?? "")));
-  if (!hit) return { documentId: null, type: null, title: null, available };
-  return { documentId: id(hit) ?? null, type: String(hit.type ?? ""), title: String(hit.title ?? ""), available };
-}
 
 async function getWithBackoff(url: string, accept: string, maxRetries = 5): Promise<Response | null> {
   const { token } = conf();
@@ -79,23 +50,24 @@ export interface FetchResult {
   note?: string;
 }
 
-/** Report → Gutachten-Dokument finden → PDF laden. Null-tolerant je Stufe. */
+/** Report → Gutachten-PDF (Typ `report`). Self-diagnosing bei Fehlschlag. */
 export async function fetchGutachtenPdf(reportId: string): Promise<FetchResult> {
   const { base } = conf();
-  const repRes = await getWithBackoff(`${base}/reports/${encodeURIComponent(reportId)}`, "application/json");
-  if (!repRes) return { status: "kein_report", note: "Report-ID 404" };
-  const body = (await repRes.json()) as Json;
-  const report = (body.report ?? body) as Json;
+  const id = encodeURIComponent(reportId);
 
-  const pick = pickGutachtenDoc(report);
-  if (!pick.documentId) {
-    return { status: "kein_dokument", note: `verfügbar: ${pick.available.map((a) => a.type || a.title).join(", ") || "—"}` };
+  // Primär: Haupt-Gutachten direkt über den dokumentierten Typ-Shortcut `report`.
+  const dl = await getWithBackoff(`${base}/reports/${id}/documents/report/download?format=pdf`, "application/pdf");
+  if (dl) {
+    const pdf = Buffer.from(await dl.arrayBuffer());
+    return { status: "ok", pdf, docType: "report" };
   }
-  const dlRes = await getWithBackoff(
-    `${base}/reports/${encodeURIComponent(reportId)}/documents/${encodeURIComponent(pick.documentId)}/download`,
-    "application/pdf",
-  );
-  if (!dlRes) return { status: "kein_dokument", note: `Download 404 (Typ ${pick.type})` };
-  const pdf = Buffer.from(await dlRes.arrayBuffer());
-  return { status: "ok", pdf, docType: pick.type };
+
+  // Kein `report`-Dokument (404). Report laden und verfügbare Typen fürs Log sammeln.
+  const rep = await getWithBackoff(`${base}/reports/${id}`, "application/json");
+  if (!rep) return { status: "kein_report", note: "Report-ID 404" };
+  const body = (await rep.json()) as Json;
+  const report = (body.report ?? body) as Json;
+  const docs = Array.isArray(report.documents) ? (report.documents as Json[]) : [];
+  const typen = docs.map((d) => String(d?.type ?? "")).filter(Boolean);
+  return { status: "kein_dokument", note: `kein 'report'-Dokument; verfügbar: ${typen.join(", ") || "—"}` };
 }
