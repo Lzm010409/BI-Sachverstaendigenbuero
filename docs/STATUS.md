@@ -298,6 +298,15 @@ Totalschaden) kamen bisher NUR aus Backfill-Migrationen (019/022/023/025) → ei
   fetch-log → nächster Lauf zieht sie korrekt neu. **Wartet auf Deploy.**
 - **Voraussetzung:** `AUTOIXPERT_API_TOKEN` als Coolify-Secret der etl-App. Ohne ihn
   läuft der Schritt als No-op (kein Fehler).
+- **GELÖST & VERIFIZIERT (2026-07-20):** Nach `#DIAG`-Blick in den echten pdf-parse-Text
+  war der letzte Fehler das fehlende Leerzeichen zwischen Label und Betrag
+  (`(371,87 €)2.329,07 €`) → Parser auf Fließtext-Anker + `\s*` umgestellt, an echtem PDF
+  verifiziert. Ergebnis über 20 Feed-Fälle: Reparaturkosten 20/20, WBW 19/20, und die
+  **netto×1,19≈brutto-Invariante 20/20** (Beleg für echte Werte). Diagnose entfernt,
+  `marts.v_gutachten_feed_log` bleibt als Monitoring.
+- **Scope: nur Jahrgang ≥ 2026** (`GUTACHTEN_MIN_JJ`, aus Aktenzeichen MMJJ) — Inhaber-
+  Vorgabe; ältere Lücken bleiben dem Backfill. Läuft automatisch beim täglichen
+  Webhook-Deploy mit (kein separater Scheduler nötig). Migrationen 044–048.
 
 ### LF6 Durchlaufzeiten (Fortsetzung)
 - **`core.dim_stage`** (6 Aufgenommen … 11 Klage), **`core.fact_durchlauf`**
