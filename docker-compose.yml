@@ -33,6 +33,7 @@ services:
           npx tsx etl/load-ziele.ts;
           npx tsx etl/load-auftragsquellen.ts;
           npx tsx etl/load-auftragsquellen-historisch.ts;
+          npx tsx etl/load-beauftragungsherkunft.ts;
           npx tsx etl/pipedrive/extract-organizations.ts;
           npx tsx etl/pipedrive/extract-deals.ts;
           npx tsx etl/pipedrive/extract-deal-flow.ts;
