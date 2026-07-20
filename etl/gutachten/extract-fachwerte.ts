@@ -65,6 +65,7 @@ async function main(): Promise<void> {
     }
 
     let ok = 0, kein_dok = 0, kein_wert = 0, fehler = 0;
+    const diag: string[] = [];
     for (const a of arbeit) {
       try {
         const res = await fetchGutachtenPdf(a.report_id);
@@ -75,6 +76,19 @@ async function main(): Promise<void> {
         }
         const text = await pdfToText(res.pdf);
         const fw = parseFachwerte(text, a.aktenzeichen);
+        // DIAGNOSE (temporär, GUTACHTEN_DIAG=1): pdf-parse-Layout um die Geldlabels
+        // einsammeln, um die Parser-Anker exakt zu treffen. NUR Zahl/Label-Kontext
+        // (kein Name/VIN/Kennzeichen). Wird gesammelt und unter Schlüssel '#DIAG' abgelegt.
+        if (diag.length < 6) {
+          const nt = text.replace(/\s+/g, " ");
+          const win = (label: string) => {
+            const i = nt.indexOf(label);
+            return i < 0 ? `${label}=∅` : `${nt.slice(i, i + 55)}`;
+          };
+          diag.push(a.aktenzeichen + ": " +
+            ["Wiederbeschaffungswert", "Reparaturkosten", "Schadenhöhe", "Restwert", "Arbeitstag"]
+              .map(win).join(" · "));
+        }
         // Nur speichern, wenn wenigstens EIN Fachwert/Klassifikation erkannt wurde.
         const hatWert = fw.beurteilung != null || fw.wiederbeschaffungswert != null ||
                         fw.reparaturkosten_brutto != null || fw.schadenhoehe_brutto != null;
@@ -107,6 +121,16 @@ async function main(): Promise<void> {
         await logAttempt(pool, a, "fehler", err instanceof Error ? err.message.slice(0, 200) : String(err));
         fehler++;
       }
+    }
+
+    // Diagnose-Zeile ablegen (fester Schlüssel '#DIAG', via marts.v_gutachten_feed_log lesbar).
+    if (diag.length) {
+      await pool.query(
+        `INSERT INTO raw.gutachten_fetch_log (aktenzeichen, report_id, status, note, attempted_at)
+           VALUES ('#DIAG', NULL, 'diag', $1, now())
+         ON CONFLICT (aktenzeichen) DO UPDATE SET note = EXCLUDED.note, attempted_at = now()`,
+        [diag.join("  ||  ").slice(0, 3000)],
+      );
     }
 
     // Wasserstand nur als Lauf-Marke (die Arbeitsliste ist selbst-inkrementell).
