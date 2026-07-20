@@ -1,0 +1,5 @@
+{
+  "_hinweis": "Lesbare Namen für die Auftragsquellen (LF4). Der Vermittler (autoiXpert 'intermediary') liegt aus DSGVO-Gründen nur als pseudonyme contact_id vor (kann eine natürliche Person sein). Hier ordnest DU (als Verantwortlicher) den contact_ids sprechende Labels zu — z. B. 'Werkstatt Müller', 'Partner Autohaus X', 'Empfehlung privat'. Ohne Eintrag zeigt das Dashboard 'Quelle <kurz-id>'. ZUM ERGÄNZEN: Paare in 'labels' eintragen, committen — nächster Deploy übernimmt es.",
+  "_beispiel": { "abc123def456": "Autohaus Beispiel GmbH" },
+  "labels": {}
+}
