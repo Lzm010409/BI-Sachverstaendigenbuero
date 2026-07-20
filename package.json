@@ -21,6 +21,7 @@
     "load:plz-geo": "tsx etl/pipedrive/load-plz-geo.ts",
     "load:ziele": "tsx etl/load-ziele.ts",
     "load:auftragsquellen": "tsx etl/load-auftragsquellen.ts",
+    "load:auftragsquellen-hist": "tsx etl/load-auftragsquellen-historisch.ts",
     "extract:gutachten": "tsx etl/autoixpert/extract-gutachten.ts",
     "extract:fachwerte": "tsx etl/gutachten/extract-fachwerte.ts",
     "test:golden": "tsx scripts/test-golden.ts",

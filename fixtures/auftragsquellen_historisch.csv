@@ -1,0 +1,7 @@
+# Historische Auftragsquellen (vor der zentralen autoiXpert-Pflege ab 2026).
+# Aus deiner Excel als CSV exportieren und hier einfuegen: eine Zeile je Fall.
+# Spalten: aktenzeichen;auftragsquelle   (Trenner ; ODER , ; Kopfzeile bleibt stehen)
+# Aktenzeichen im Format MMJJ/NummerTG (Gross-/Kleinschreibung + Leerzeichen egal).
+# Zeilen mit # werden ignoriert. Beispiel (entfernen/ersetzen):
+# 0125/1234TG;Autohaus Beispiel GmbH
+aktenzeichen;auftragsquelle
