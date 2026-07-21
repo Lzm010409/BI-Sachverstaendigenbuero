@@ -1,0 +1,33 @@
+# markt_kreis.csv — Einzugsgebiet-Kreise (Kfz-Sachverständigenbüro, NRW Niederrhein/Düsseldorf).
+#
+# ZWECK: Marktpotenzial je Kreis, um die eigene Marktausschöpfung zu messen (Expansion:
+#        "wo ist viel Markt, den wir NICHT abdecken?"). Join zum eigenen Bestand über
+#        fixtures/plz4_kreis.csv -> core.dim_fall_geo.plz4.
+#
+# ags = Amtlicher Gemeindeschlüssel auf Kreisebene (5-stellig, stabil).
+#
+# WICHTIG (CLAUDE.md — Referenzwerte nie erfinden): einwohner, kfz_bestand und
+# unfaelle_gesamt sind AMTLICH zu befüllen und bleiben sonst leer (NULL):
+#   kfz_bestand      -> KBA FZ1 "Bestand an Kraftfahrzeugen nach Zulassungsbezirken"
+#                       (https://www.kba.de, jährlich zum 1.1.)
+#   einwohner        -> IT.NRW / Destatis, Bevölkerung je Kreis
+#   unfaelle_gesamt  -> IT.NRW / Destatis, Straßenverkehrsunfälle je Kreis (jährlich)
+# Je befüllter Zeile jahr + quelle setzen. Geschätzte Werte sind hier VERBOTEN
+# (Fehlermodus "plausibel-aber-falsch"). Egress-Sperre der Stat-Server verhinderte
+# den automatischen Abruf in dieser Session — daher Werte offen.
+#
+# Editierbar -> bei neuen Jahreszahlen CSV pflegen + neu deployen. Voller Sync.
+ags;kreis;bundesland;einwohner;kfz_bestand;unfaelle_gesamt;jahr;quelle
+05162;Rhein-Kreis Neuss;Nordrhein-Westfalen;;;;;
+05111;Düsseldorf;Nordrhein-Westfalen;;;;;
+05114;Krefeld;Nordrhein-Westfalen;;;;;
+05116;Mönchengladbach;Nordrhein-Westfalen;;;;;
+05158;Kreis Mettmann;Nordrhein-Westfalen;;;;;
+05166;Kreis Viersen;Nordrhein-Westfalen;;;;;
+05154;Kreis Kleve;Nordrhein-Westfalen;;;;;
+05315;Köln;Nordrhein-Westfalen;;;;;
+05112;Duisburg;Nordrhein-Westfalen;;;;;
+05362;Rhein-Erft-Kreis;Nordrhein-Westfalen;;;;;
+05334;StädteRegion Aachen;Nordrhein-Westfalen;;;;;
+05370;Kreis Heinsberg;Nordrhein-Westfalen;;;;;
+05358;Kreis Düren;Nordrhein-Westfalen;;;;;

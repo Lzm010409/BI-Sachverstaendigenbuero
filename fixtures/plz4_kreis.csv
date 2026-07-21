@@ -1,0 +1,67 @@
+# plz4_kreis.csv — Zuordnung 4-stellige PLZ (erste 4 Ziffern von core.dim_fall_geo.plz4)
+# zum Kreis (ags aus markt_kreis.csv). Deterministische Postgeographie, editierbar.
+#
+# Enthält nur die im eigenen Bestand tatsächlich vorkommenden plz4 des Einzugsgebiets.
+# Nicht gelistete plz4 (weit entfernte Einzelfälle, Fehl-Erfassungen) zählen in den
+# Auswertungen als '(außerhalb Einzugsgebiet)'. Bei Fehlzuordnung: Zeile korrigieren.
+plz4;ags
+# --- Rhein-Kreis Neuss (Kern: Neuss, Dormagen, Kaarst, Grevenbroich, Korschenbroich,
+#     Jüchen, Rommerskirchen, Meerbusch) ---
+4146;05162
+4147;05162
+4151;05162
+4153;05162
+4154;05162
+4156;05162
+4135;05162
+4136;05162
+4066;05162
+4067;05162
+# --- Düsseldorf (kreisfrei) ---
+4021;05111
+4022;05111
+4023;05111
+4047;05111
+4054;05111
+4058;05111
+4059;05111
+4062;05111
+# --- Krefeld (kreisfrei) ---
+4779;05114
+4780;05114
+4782;05114
+# --- Mönchengladbach (kreisfrei) ---
+4106;05116
+# --- Kreis Mettmann (Langenfeld, Hilden, Erkrath) ---
+4069;05158
+4072;05158
+4076;05158
+# --- Kreis Viersen (Tönisvorst, Willich, Nettetal, Brüggen) ---
+4133;05166
+4137;05166
+4787;05166
+4791;05166
+# --- Kreis Kleve (Wachtendonk) ---
+4766;05154
+# --- Köln (kreisfrei) ---
+5066;05315
+5067;05315
+5076;05315
+5082;05315
+5099;05315
+5114;05315
+# --- Duisburg (kreisfrei) ---
+4716;05112
+4717;05112
+4725;05112
+# --- Rhein-Erft-Kreis (Pulheim) ---
+5025;05362
+# --- StädteRegion Aachen (Aachen, Simmerath) ---
+5206;05334
+5215;05334
+# --- Kreis Heinsberg (Gangelt, Hückelhoven, Wegberg) ---
+4183;05370
+4184;05370
+5253;05370
+# --- Kreis Düren ---
+5235;05358

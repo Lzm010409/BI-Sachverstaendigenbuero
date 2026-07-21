@@ -25,6 +25,7 @@
     "load:auftragsquellen-hist": "tsx etl/load-auftragsquellen-historisch.ts",
     "load:beauftragungsherkunft": "tsx etl/load-beauftragungsherkunft.ts",
     "load:honorar-referenz": "tsx etl/load-honorar-referenz.ts",
+    "load:marktdaten": "tsx etl/load-marktdaten.ts",
     "extract:gutachten": "tsx etl/autoixpert/extract-gutachten.ts",
     "extract:fachwerte": "tsx etl/gutachten/extract-fachwerte.ts",
     "test:golden": "tsx scripts/test-golden.ts",
