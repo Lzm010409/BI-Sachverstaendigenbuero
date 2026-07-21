@@ -17,6 +17,7 @@ import { makePool } from "./db.js";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const F_KREIS = resolve(__dirname, "..", "fixtures", "markt_kreis.csv");
 const F_PLZ4 = resolve(__dirname, "..", "fixtures", "plz4_kreis.csv");
+const F_NRW = resolve(__dirname, "..", "fixtures", "markt_nrw.csv");
 
 interface KreisRow {
   ags: string;
@@ -31,6 +32,12 @@ interface KreisRow {
 interface Plz4Row {
   plz4: string;
   ags: string;
+}
+interface NrwRow {
+  kennzahl: string;
+  jahr: number;
+  wert: number;
+  quelle: string | null;
 }
 
 function cells(csv: string): string[][] {
@@ -87,9 +94,23 @@ function parsePlz4(csv: string): Plz4Row[] {
   return out;
 }
 
+function parseNrw(csv: string): NrwRow[] {
+  const out: NrwRow[] = [];
+  for (const p of cells(csv)) {
+    const kennzahl = (p[0] ?? "").trim();
+    if (kennzahl.toLowerCase() === "kennzahl" || !kennzahl) continue;
+    const jahr = num(p[1]);
+    const wert = num(p[2]);
+    if (jahr === null || wert === null) continue;
+    out.push({ kennzahl, jahr, wert, quelle: str(p[3]) });
+  }
+  return out;
+}
+
 async function main(): Promise<void> {
   const kreise = parseKreis(readFileSync(F_KREIS, "utf8"));
   const plz4 = parsePlz4(readFileSync(F_PLZ4, "utf8"));
+  const nrw = parseNrw(readFileSync(F_NRW, "utf8"));
   const valid = new Set(kreise.map((k) => k.ags));
   const orphan = plz4.filter((p) => !valid.has(p.ags));
   if (orphan.length) {
@@ -118,10 +139,18 @@ async function main(): Promise<void> {
         [p.plz4, p.ags],
       );
     }
+    await pool.query("TRUNCATE core.dim_markt_nrw");
+    for (const n of nrw) {
+      await pool.query(
+        `INSERT INTO core.dim_markt_nrw (kennzahl, jahr, wert, quelle) VALUES ($1,$2,$3,$4)`,
+        [n.kennzahl, n.jahr, n.wert, n.quelle],
+      );
+    }
     await pool.query("COMMIT");
     const mitWerten = kreise.filter((k) => k.kfz_bestand != null || k.einwohner != null).length;
     console.log(
-      `Marktdaten geladen: ${kreise.length} Kreise (${mitWerten} mit Marktkennzahlen), ${plz4.length} PLZ4-Zuordnungen`,
+      `Marktdaten geladen: ${kreise.length} Kreise (${mitWerten} mit Marktkennzahlen), ` +
+        `${plz4.length} PLZ4-Zuordnungen, ${nrw.length} NRW-Aggregate`,
     );
   } catch (err) {
     await pool.query("ROLLBACK").catch(() => {});

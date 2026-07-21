@@ -1,0 +1,16 @@
+# markt_nrw.csv — NRW-Landesaggregate als Markt-Kontext (grober Headroom-Bezug).
+#
+# ACHTUNG Granularität: Dies sind LANDESWEITE NRW-Summen, KEIN Kreis-Breakdown.
+# Sie taugen als grober Marktkontext ("wie klein ist unser Fußabdruck gegenüber dem
+# NRW-Gesamtmarkt"), NICHT für die per-Kreis-Ausschöpfung (dafür braucht es die
+# per-Zulassungsbezirk-/per-Kreis-Tabellen, siehe fixtures/markt_kreis.csv).
+#
+# Quellen (vom Inhaber geliefert, verifizierbar):
+#   kfz_bestand_nrw / pkw_bestand_nrw — IT.NRW/KBA, "Bestand an Kraftfahrzeugen mit
+#     amtlichem Kennzeichen am 1. Januar 2026".
+#   verkehrsunfaelle_nrw — Polizeiliche Verkehrsunfallbilanz NRW 2025 (Ministerium des
+#     Innern NRW, Landespressekonferenz 11.03.2026): 656.030 erfasste Verkehrsunfälle.
+kennzahl;jahr;wert;quelle
+kfz_bestand_nrw;2026;12788406;IT.NRW/KBA, Bestand Kfz m. amtl. Kennzeichen 1.1.2026
+pkw_bestand_nrw;2026;10664594;IT.NRW/KBA, Bestand Pkw 1.1.2026
+verkehrsunfaelle_nrw;2025;656030;Polizeiliche Verkehrsunfallbilanz NRW 2025 (IM NRW)
