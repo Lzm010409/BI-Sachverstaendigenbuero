@@ -6,28 +6,26 @@
 #
 # ags = Amtlicher Gemeindeschlüssel auf Kreisebene (5-stellig, stabil).
 #
-# WICHTIG (CLAUDE.md — Referenzwerte nie erfinden): einwohner, kfz_bestand und
-# unfaelle_gesamt sind AMTLICH zu befüllen und bleiben sonst leer (NULL):
-#   kfz_bestand      -> KBA FZ1 "Bestand an Kraftfahrzeugen nach Zulassungsbezirken"
-#                       (https://www.kba.de, jährlich zum 1.1.)
-#   einwohner        -> IT.NRW / Destatis, Bevölkerung je Kreis
-#   unfaelle_gesamt  -> IT.NRW / Destatis, Straßenverkehrsunfälle je Kreis (jährlich)
-# Je befüllter Zeile jahr + quelle setzen. Geschätzte Werte sind hier VERBOTEN
-# (Fehlermodus "plausibel-aber-falsch"). Egress-Sperre der Stat-Server verhinderte
-# den automatischen Abruf in dieser Session — daher Werte offen.
+# kfz_bestand = Kraftfahrzeuge insgesamt je Zulassungsbezirk, Stand 1.1.2026.
+#   Quelle: KBA FZ 1.1 "Bestand an Kraftfahrzeugen nach Zulassungsbezirken" (fz1_2026).
+#   Kontrolle: Summe aller NRW-Zulassungsbezirke = 12.788.406 = NRW-Gesamt (markt_nrw.csv). ✓
+#
+# WICHTIG (CLAUDE.md — nie erfinden): einwohner + unfaelle_gesamt sind noch offen
+#   (IT.NRW/Destatis Einwohner je Kreis; Verkehrsunfälle je Kreis nur aus dem
+#   Unfallatlas aggregierbar). Bleiben leer (NULL), bis belegt beschafft.
 #
 # Editierbar -> bei neuen Jahreszahlen CSV pflegen + neu deployen. Voller Sync.
 ags;kreis;bundesland;einwohner;kfz_bestand;unfaelle_gesamt;jahr;quelle
-05162;Rhein-Kreis Neuss;Nordrhein-Westfalen;;;;;
-05111;Düsseldorf;Nordrhein-Westfalen;;;;;
-05114;Krefeld;Nordrhein-Westfalen;;;;;
-05116;Mönchengladbach;Nordrhein-Westfalen;;;;;
-05158;Kreis Mettmann;Nordrhein-Westfalen;;;;;
-05166;Kreis Viersen;Nordrhein-Westfalen;;;;;
-05154;Kreis Kleve;Nordrhein-Westfalen;;;;;
-05315;Köln;Nordrhein-Westfalen;;;;;
-05112;Duisburg;Nordrhein-Westfalen;;;;;
-05362;Rhein-Erft-Kreis;Nordrhein-Westfalen;;;;;
-05334;StädteRegion Aachen;Nordrhein-Westfalen;;;;;
-05370;Kreis Heinsberg;Nordrhein-Westfalen;;;;;
-05358;Kreis Düren;Nordrhein-Westfalen;;;;;
+05162;Rhein-Kreis Neuss;Nordrhein-Westfalen;;336462;;2026;KBA FZ1.1 Bestand Kfz je Zulassungsbezirk 1.1.2026
+05111;Düsseldorf;Nordrhein-Westfalen;;388765;;2026;KBA FZ1.1 Bestand Kfz je Zulassungsbezirk 1.1.2026
+05114;Krefeld;Nordrhein-Westfalen;;144633;;2026;KBA FZ1.1 Bestand Kfz je Zulassungsbezirk 1.1.2026
+05116;Mönchengladbach;Nordrhein-Westfalen;;170328;;2026;KBA FZ1.1 Bestand Kfz je Zulassungsbezirk 1.1.2026
+05158;Kreis Mettmann;Nordrhein-Westfalen;;360074;;2026;KBA FZ1.1 Bestand Kfz je Zulassungsbezirk 1.1.2026
+05166;Kreis Viersen;Nordrhein-Westfalen;;238394;;2026;KBA FZ1.1 Bestand Kfz je Zulassungsbezirk 1.1.2026
+05154;Kreis Kleve;Nordrhein-Westfalen;;248645;;2026;KBA FZ1.1 Bestand Kfz je Zulassungsbezirk 1.1.2026
+05315;Köln;Nordrhein-Westfalen;;593312;;2026;KBA FZ1.1 Bestand Kfz je Zulassungsbezirk 1.1.2026
+05112;Duisburg;Nordrhein-Westfalen;;281932;;2026;KBA FZ1.1 Bestand Kfz je Zulassungsbezirk 1.1.2026
+05362;Rhein-Erft-Kreis;Nordrhein-Westfalen;;351710;;2026;KBA FZ1.1 Bestand Kfz je Zulassungsbezirk 1.1.2026
+05334;StädteRegion Aachen;Nordrhein-Westfalen;;359814;;2026;KBA FZ1.1 Bestand Kfz je Zulassungsbezirk 1.1.2026
+05370;Kreis Heinsberg;Nordrhein-Westfalen;;207563;;2026;KBA FZ1.1 Bestand Kfz je Zulassungsbezirk 1.1.2026
+05358;Kreis Düren;Nordrhein-Westfalen;;210172;;2026;KBA FZ1.1 Bestand Kfz je Zulassungsbezirk 1.1.2026
