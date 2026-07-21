@@ -1,7 +1,12 @@
 /**
  * snapshot-kpis.ts — schreibt die aktuellen Headline-KPIs monatlich nach
- * core.kpi_snapshot (Kennzahlen-Verläufe). Idempotenter Upsert je Monat: läuft am
- * Ende der nächtlichen ETL-Kette, aktualisiert die Zeile des laufenden Monats.
+ * core.kpi_snapshot (Kennzahlen-Verläufe). Idempotenter Upsert je Monat, aktualisiert
+ * die Zeile des laufenden Monats.
+ *
+ * Läuft in der ETL-Kette NACH den Pipedrive-/Gutachten-/Rechnungspositions-Extrakten
+ * (alle KPI-Inputs frisch), aber VOR dem langsamen sevDesk-Zahlungs-Tail (per-Rechnung
+ * paginierend) — so ist der Snapshot nicht an den langsamsten Schritt gekoppelt und
+ * läuft auch dann zuverlässig, wenn der Zahlungs-Extrakt lange dauert.
  *
  * Alle KPI-Definitionen leben in marts.v_kpi_aktuell (sql/061) — hier keine Fachlogik,
  * nur das Wegschreiben. Neue KPI ergänzt man in v_kpi_aktuell, nicht hier.

@@ -45,9 +45,9 @@ services:
           npx tsx etl/autoixpert/extract-gutachten.ts;
           npx tsx etl/sevdesk/extract-invoices.ts;
           npx tsx etl/sevdesk/extract-positions.ts;
+          npx tsx etl/snapshot-kpis.ts;
           npx tsx etl/sevdesk/extract-vouchers.ts;
-          npx tsx etl/sevdesk/extract-payments.ts;
-          npx tsx etl/snapshot-kpis.ts; }
+          npx tsx etl/sevdesk/extract-payments.ts; }
     environment:
       WAREHOUSE_DB_HOST: ${WAREHOUSE_DB_HOST}
       WAREHOUSE_DB_PORT: ${WAREHOUSE_DB_PORT:-5432}
