@@ -11,7 +11,7 @@
  * Idempotenter Upsert per Positions-Objekt-ID.
  */
 import { makePool } from "../db.js";
-import { paginate } from "./client.js";
+import { paginate, SevdeskHttpError } from "./client.js";
 import { projectPosition } from "./project.js";
 import { logRun } from "./run-log.js";
 
@@ -29,28 +29,41 @@ async function main(): Promise<void> {
     console.log(`Extrahiere Positionen für ${invoices.rowCount} Rechnungen …`);
 
     let total = 0;
+    let skipped = 0;
     for (const { id } of invoices.rows) {
-      const count = await paginate<Position>(
-        `Invoice/${id}/getPositions`,
-        { embed: "part,unity" },
-        async (pos) => {
-          const { id: posId, invoice_id, payload } = projectPosition(pos as Record<string, unknown>);
-          await pool.query(
-            `INSERT INTO raw.sevdesk_invoice_positions (id, invoice_id, payload, extracted_at)
-               VALUES ($1, $2, $3, now())
-             ON CONFLICT (id) DO UPDATE
-               SET invoice_id = EXCLUDED.invoice_id,
-                   payload = EXCLUDED.payload,
-                   extracted_at = now()`,
-            [Number(posId), Number(invoice_id || id), payload],
-          );
-        },
-      );
-      total += count;
+      try {
+        const count = await paginate<Position>(
+          `Invoice/${id}/getPositions`,
+          { embed: "part,unity" },
+          async (pos) => {
+            const { id: posId, invoice_id, payload } = projectPosition(pos as Record<string, unknown>);
+            await pool.query(
+              `INSERT INTO raw.sevdesk_invoice_positions (id, invoice_id, payload, extracted_at)
+                 VALUES ($1, $2, $3, now())
+               ON CONFLICT (id) DO UPDATE
+                 SET invoice_id = EXCLUDED.invoice_id,
+                     payload = EXCLUDED.payload,
+                     extracted_at = now()`,
+              [Number(posId), Number(invoice_id || id), payload],
+            );
+          },
+        );
+        total += count;
+      } catch (err) {
+        // Nachträglich in sevDesk gelöschte Rechnung (ID bleibt in raw) -> 404.
+        // Überspringen statt Abbruch; andere Fehler bleiben fatal.
+        if (err instanceof SevdeskHttpError && err.status === 404) {
+          skipped++;
+          continue;
+        }
+        throw err;
+      }
     }
 
-    await logRun(pool, "sevdesk_invoice_positions", "ok", total, null);
-    console.log(`Fertig: ${total} Positionen aktualisiert.`);
+    await logRun(pool, "sevdesk_invoice_positions", "ok", total, skipped ? `skipped_404=${skipped}` : null);
+    console.log(
+      `Fertig: ${total} Positionen aktualisiert${skipped ? `, ${skipped} gelöschte Rechnung(en) übersprungen (404)` : ""}.`,
+    );
   } catch (err) {
     await logRun(pool, "sevdesk_invoice_positions", "error", null, err instanceof Error ? err.message : String(err));
     throw err;

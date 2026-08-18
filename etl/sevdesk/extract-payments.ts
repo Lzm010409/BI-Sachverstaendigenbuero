@@ -11,7 +11,7 @@
  * payeePayerName/IBAN/Verwendungszweck. Idempotenter Upsert per Log-Objekt-ID.
  */
 import { makePool } from "../db.js";
-import { paginate } from "./client.js";
+import { paginate, SevdeskHttpError } from "./client.js";
 import { projectBooking } from "./project.js";
 import { logRun } from "./run-log.js";
 
@@ -31,24 +31,36 @@ async function main(): Promise<void> {
     console.log(`Extrahiere Zahlungsbuchungen für ${invoices.rowCount} Rechnungen …`);
 
     let total = 0;
+    let skipped = 0;
     for (const { id } of invoices.rows) {
-      const count = await paginate<Log>(
-        `Invoice/${id}/getCheckAccountTransactionLogs`,
-        { embed: "checkAccountTransaction,checkAccountTransaction.checkAccount" },
-        async (log) => {
-          const { id: logId, invoice_id, payload } = projectBooking(log as Record<string, unknown>);
-          await pool.query(
-            `INSERT INTO raw.sevdesk_invoice_bookings (id, invoice_id, payload, extracted_at)
-               VALUES ($1, $2, $3, now())
-             ON CONFLICT (id) DO UPDATE
-               SET invoice_id = EXCLUDED.invoice_id,
-                   payload = EXCLUDED.payload,
-                   extracted_at = now()`,
-            [Number(logId), Number(invoice_id || id), payload],
-          );
-        },
-      );
-      total += count;
+      try {
+        const count = await paginate<Log>(
+          `Invoice/${id}/getCheckAccountTransactionLogs`,
+          { embed: "checkAccountTransaction,checkAccountTransaction.checkAccount" },
+          async (log) => {
+            const { id: logId, invoice_id, payload } = projectBooking(log as Record<string, unknown>);
+            await pool.query(
+              `INSERT INTO raw.sevdesk_invoice_bookings (id, invoice_id, payload, extracted_at)
+                 VALUES ($1, $2, $3, now())
+               ON CONFLICT (id) DO UPDATE
+                 SET invoice_id = EXCLUDED.invoice_id,
+                     payload = EXCLUDED.payload,
+                     extracted_at = now()`,
+              [Number(logId), Number(invoice_id || id), payload],
+            );
+          },
+        );
+        total += count;
+      } catch (err) {
+        // Rechnung existiert in sevDesk nicht mehr (nachträglich gelöscht) — die ID
+        // bleibt in raw.sevdesk_invoices ("Rohdaten heilig"), liefert hier aber 404.
+        // Überspringen statt den ganzen Lauf abzubrechen. Andere Fehler bleiben fatal.
+        if (err instanceof SevdeskHttpError && err.status === 404) {
+          skipped++;
+          continue;
+        }
+        throw err;
+      }
     }
 
     await pool.query(
@@ -58,8 +70,10 @@ async function main(): Promise<void> {
       [SOURCE],
     );
 
-    await logRun(pool, SOURCE, "ok", total, null);
-    console.log(`Fertig: ${total} Buchungen aktualisiert.`);
+    await logRun(pool, SOURCE, "ok", total, skipped ? `skipped_404=${skipped}` : null);
+    console.log(
+      `Fertig: ${total} Buchungen aktualisiert${skipped ? `, ${skipped} gelöschte Rechnung(en) übersprungen (404)` : ""}.`,
+    );
   } catch (err) {
     await logRun(pool, SOURCE, "error", null, err instanceof Error ? err.message : String(err));
     throw err;

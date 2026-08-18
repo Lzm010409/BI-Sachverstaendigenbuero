@@ -15,6 +15,20 @@
 
 const PAGE = 100;
 
+/**
+ * Fehler eines nicht-wiederholbaren sevDesk-HTTP-Status (4xx). Trägt den Status,
+ * damit Aufrufer gezielt reagieren können — z. B. 404 (Rechnung in sevDesk gelöscht)
+ * je Objekt überspringen, statt den ganzen Lauf abzubrechen.
+ */
+export class SevdeskHttpError extends Error {
+  readonly status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "SevdeskHttpError";
+    this.status = status;
+  }
+}
+
 function conf(): { base: string; token: string } {
   const base = process.env.SEVDESK_API_BASE ?? "https://my.sevdesk.de/api/v1";
   const token = process.env.SEVDESK_API_TOKEN;
@@ -45,7 +59,10 @@ async function fetchWithBackoff(url: string, token: string, maxRetries = 6): Pro
       continue;
     }
     const text = await res.text().catch(() => "");
-    throw new Error(`sevDesk ${url.split("?")[0]} -> HTTP ${res.status} ${text.slice(0, 200)}`);
+    throw new SevdeskHttpError(
+      res.status,
+      `sevDesk ${url.split("?")[0]} -> HTTP ${res.status} ${text.slice(0, 200)}`,
+    );
   }
 }
 
